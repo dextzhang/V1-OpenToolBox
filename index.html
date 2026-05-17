@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN" data-page="index">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenToolBox</title>
+  <meta name="description" content="OpenToolBox 是一个可离线使用、可扩展的本地效率工具箱。">
+  <link rel="stylesheet" href="cc-styles.css?v=2.3.3">
+  <link rel="stylesheet" href="src/css/open-toolbox.css?v=1.0.3">
+</head>
+<body class="sc-style-1">
+  <div id="bg-layer"></div>
+
+  <div class="container">
+    <h1><span class="toolbox-mark">OT</span><span class="title-text">OpenToolBox</span></h1>
+    <p class="hint">开源版本地效率工具箱，保留原工具页玻璃风格，新增工具只改注册表。</p>
+
+    <section class="open-control-panel" aria-label="工具筛选">
+      <label class="tool-search">
+        <span>搜索工具</span>
+        <input id="toolSearch" type="search" placeholder="搜索工具、分类或描述" autocomplete="off">
+      </label>
+      <div class="tabs" id="categoryTabs"></div>
+      <button class="ghost-button" id="resetOrderButton" type="button">恢复默认排序</button>
+    </section>
+
+    <section class="recent-panel" id="recentPanel" hidden>
+      <div class="recent-head">
+        <span>最近常用</span>
+        <small>最近 7 天</small>
+      </div>
+      <div class="recent-list" id="recentList"></div>
+    </section>
+
+    <div class="index-section-head">
+      <span>全部工具</span>
+      <small id="toolCount"></small>
+    </div>
+    <div class="cards" id="toolGrid" aria-live="polite"></div>
+    <p class="empty-state" id="emptyState" hidden>没有匹配的工具。</p>
+  </div>
+
+  <script src="src/data/tools.js?v=1.0.3"></script>
+  <script src="src/js/storage.js?v=1.0.3"></script>
+  <script src="src/js/index-page.js?v=1.0.3"></script>
+  <script src="cc-common.js?v=2.3.3"></script>
+</body>
+</html>

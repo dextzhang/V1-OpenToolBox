@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-inspiration">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灵感记录 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=2.2.0">
+</head>
+<body>
+    <main class="inspiration-app">
+        <header class="inspiration-header">
+            <div>
+                <p class="eyebrow">Inspiration Inbox</p>
+                <h1>灵感记录</h1>
+                <p class="subtitle">先把火花留下，再慢慢筛选、归类和推进。</p>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="ghost-btn" id="randomPromptBtn">换题</button>
+                <select id="themeSelect" class="theme-select" aria-label="主题切换">
+                    <option value="amber">A 黑金琥珀</option>
+                    <option value="moss">B 墨绿铜色</option>
+                    <option value="violet">C 夜间蓝紫</option>
+                </select>
+                <button type="button" class="ghost-btn" id="exportBtn">导出</button>
+                <label class="ghost-btn file-btn">
+                    导入
+                    <input type="file" id="importFile" accept="application/json,.json">
+                </label>
+            </div>
+        </header>
+
+        <section class="capture-panel">
+            <div class="capture-main">
+                <input id="ideaTitle" class="title-input" type="text" placeholder="给这个灵感起个名字">
+                <textarea id="ideaContent" class="capture-input" rows="7" placeholder="快速写下一个念头、观察、待验证想法或灵感片段"></textarea>
+                <div class="capture-meta">
+                    <select id="ideaType" aria-label="灵感类型">
+                        <option value="idea">想法</option>
+                        <option value="task">行动</option>
+                        <option value="quote">摘录</option>
+                        <option value="question">问题</option>
+                        <option value="design">设计</option>
+                    </select>
+                    <select id="ideaMood" aria-label="灵感状态">
+                        <option value="fresh">刚冒出来</option>
+                        <option value="promising">值得推进</option>
+                        <option value="unclear">还不清楚</option>
+                        <option value="later">以后再看</option>
+                    </select>
+                    <select id="ideaImportance" aria-label="重要性">
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3" selected>⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                        <option value="6">⭐⭐⭐⭐⭐⭐</option>
+                    </select>
+                    <input id="ideaTags" type="text" placeholder="标签，用逗号分隔">
+                </div>
+            </div>
+            <aside class="capture-side">
+                <div class="prompt-card">
+                    <span>启发问题</span>
+                    <strong id="promptText">这个想法解决了什么真实的小麻烦？</strong>
+                </div>
+                <button type="button" class="primary-btn" id="saveBtn">记录灵感</button>
+                <button type="button" class="ghost-btn wide" id="clearDraftBtn">清空草稿</button>
+            </aside>
+        </section>
+
+        <section class="stats-grid" aria-label="灵感统计">
+            <div class="stat-tile"><span id="totalCount">0</span><small>全部</small></div>
+            <div class="stat-tile"><span id="activeCount">0</span><small>灵感记录箱</small></div>
+            <div class="stat-tile"><span id="pinnedCount">0</span><small>置顶</small></div>
+            <div class="stat-tile"><span id="tagCount">0</span><small>标签</small></div>
+        </section>
+
+        <section class="library-panel">
+            <div class="library-toolbar">
+                <div class="search-wrap">
+                    <span aria-hidden="true">⌕</span>
+                    <input id="searchInput" type="search" placeholder="搜索标题、内容或标签">
+                </div>
+                <div class="toolbar-controls">
+                    <div class="view-tabs" role="tablist" aria-label="视图">
+                        <button type="button" class="active" data-view="active">灵感记录箱</button>
+                        <button type="button" data-view="pinned">置顶</button>
+                        <button type="button" data-view="archived">归档</button>
+                        <button type="button" data-view="all">全部</button>
+                    </div>
+                    <select id="typeFilter" aria-label="按类型筛选">
+                        <option value="all">全部类型</option>
+                        <option value="idea">想法</option>
+                        <option value="task">行动</option>
+                        <option value="quote">摘录</option>
+                        <option value="question">问题</option>
+                        <option value="design">设计</option>
+                    </select>
+                    <select id="dateFilter" aria-label="按时间和整理状态筛选">
+                        <option value="all">全部时间</option>
+                        <option value="today">今天记录</option>
+                        <option value="week">最近 7 天</option>
+                        <option value="month">最近 30 天</option>
+                        <option value="untagged">未标签</option>
+                    </select>
+                    <select id="sortSelect" aria-label="排序">
+                        <option value="updated">最近修改</option>
+                        <option value="importance">重要性优先</option>
+                        <option value="created">最近创建</option>
+                        <option value="title">标题</option>
+                    </select>
+                </div>
+            </div>
+            <div class="tag-strip" id="tagStrip"></div>
+            <div class="ideas-list" id="ideasList"></div>
+            <div class="empty-state" id="emptyState">
+                <strong>还没有灵感记录</strong>
+                <span>上方写下一句话也可以，先留住它。</span>
+            </div>
+        </section>
+    </main>
+
+    <div class="idea-modal" id="ideaModal" aria-hidden="true">
+        <div class="idea-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-head">
+                <h2 id="modalTitle">编辑灵感</h2>
+                <button type="button" class="icon-btn" id="closeModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <input id="editTitle" class="title-input" type="text" placeholder="标题">
+                <textarea id="editContent" class="capture-input" rows="9" placeholder="内容"></textarea>
+                <div class="capture-meta">
+                    <select id="editType" aria-label="灵感类型">
+                        <option value="idea">想法</option>
+                        <option value="task">行动</option>
+                        <option value="quote">摘录</option>
+                        <option value="question">问题</option>
+                        <option value="design">设计</option>
+                    </select>
+                    <select id="editMood" aria-label="灵感状态">
+                        <option value="fresh">刚冒出来</option>
+                        <option value="promising">值得推进</option>
+                        <option value="unclear">还不清楚</option>
+                        <option value="later">以后再看</option>
+                    </select>
+                    <select id="editImportance" aria-label="重要性">
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3">⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                        <option value="6">⭐⭐⭐⭐⭐⭐</option>
+                    </select>
+                    <input id="editTags" type="text" placeholder="标签，用逗号分隔">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="ghost-btn" id="copyEditBtn">复制</button>
+                <button type="button" class="ghost-btn" id="deleteEditBtn">删除</button>
+                <button type="button" class="primary-btn" id="saveEditBtn">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'cc_inspirations';
+        const DRAFT_KEY = 'cc_inspiration_draft';
+        const THEME_KEY = 'cc_inspiration_theme';
+
+        const typeLabel = { idea: '想法', task: '行动', quote: '摘录', question: '问题', design: '设计' };
+        const moodLabel = { fresh: '刚冒出来', promising: '值得推进', unclear: '还不清楚', later: '以后再看' };
+        const prompts = [
+            '先写最小版本。',
+            '它解决什么小麻烦？',
+            '下一步是什么？',
+            '谁会需要它？',
+            '能否 30 分钟验证？',
+            '最打动你的点？',
+            '它像什么？',
+            '删掉什么会更清楚？',
+            '有什么反例？',
+            '先做哪一块？',
+            '一句话讲清它。',
+            '它的使用场景？',
+            '今天能推进什么？',
+            '最小成果是什么？',
+            '风险在哪里？',
+            '它和什么有关？',
+            '先收集什么资料？',
+            '谁能给反馈？',
+            '它为什么重要？',
+            '可复用在哪里？',
+            '要不要拆小？',
+            '它缺什么？',
+            '最强卖点是什么？',
+            '先画个草图？',
+            '能否自动化？',
+            '保留核心就好。',
+            '写给未来的自己。',
+            '先别评判。',
+            '把模糊处圈出来。',
+            '下一次回看何时？'
+        ];
+
+        let ideas = [];
+        let currentView = 'active';
+        let currentTag = '';
+        let editingId = null;
+        let editSnapshot = '';
+        const els = {};
+
+        function init() {
+            cacheElements();
+            bindEvents();
+            loadTheme();
+            loadIdeas();
+            restoreDraft();
+            rotatePrompt(false);
+            render();
+        }
+
+        function cacheElements() {
+            [
+                'ideaTitle', 'ideaContent', 'ideaType', 'ideaMood', 'ideaImportance', 'ideaTags',
+                'promptText', 'saveBtn', 'clearDraftBtn', 'randomPromptBtn', 'themeSelect', 'exportBtn',
+                'importFile', 'totalCount', 'activeCount', 'pinnedCount', 'tagCount',
+                'searchInput', 'typeFilter', 'dateFilter', 'sortSelect', 'tagStrip', 'ideasList', 'emptyState',
+                'ideaModal', 'closeModalBtn', 'editTitle', 'editContent', 'editType',
+                'editMood', 'editImportance', 'editTags', 'copyEditBtn', 'deleteEditBtn', 'saveEditBtn'
+            ].forEach(id => els[id] = document.getElementById(id));
+        }
+
+        function bindEvents() {
+            els.saveBtn.addEventListener('click', addIdea);
+            els.clearDraftBtn.addEventListener('click', () => clearDraft(false));
+            els.randomPromptBtn.addEventListener('click', () => rotatePrompt(true));
+            els.themeSelect.addEventListener('change', () => applyTheme(els.themeSelect.value, true));
+            els.exportBtn.addEventListener('click', exportIdeas);
+            els.importFile.addEventListener('change', importIdeas);
+            els.searchInput.addEventListener('input', renderIdeas);
+            els.typeFilter.addEventListener('change', renderIdeas);
+            els.dateFilter.addEventListener('change', renderIdeas);
+            els.sortSelect.addEventListener('change', renderIdeas);
+            els.closeModalBtn.addEventListener('click', closeModal);
+            els.ideaModal.addEventListener('click', event => { if (event.target === els.ideaModal) closeModal(); });
+            els.copyEditBtn.addEventListener('click', copyEditingIdea);
+            els.deleteEditBtn.addEventListener('click', deleteEditingIdea);
+            els.saveEditBtn.addEventListener('click', saveEditingIdea);
+
+            ['editTitle', 'editContent', 'editType', 'editMood', 'editImportance', 'editTags'].forEach(id => {
+                els[id].addEventListener('input', markModalChanged);
+                els[id].addEventListener('change', markModalChanged);
+            });
+
+            document.querySelectorAll('.view-tabs button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentView = button.dataset.view;
+                    currentTag = '';
+                    document.querySelectorAll('.view-tabs button').forEach(item => item.classList.remove('active'));
+                    button.classList.add('active');
+                    renderIdeas();
+                });
+            });
+
+            ['ideaTitle', 'ideaContent', 'ideaType', 'ideaMood', 'ideaImportance', 'ideaTags'].forEach(id => {
+                els[id].addEventListener('input', saveDraft);
+                els[id].addEventListener('change', saveDraft);
+            });
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') closeModal();
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    if (els.ideaModal.classList.contains('show')) saveEditingIdea();
+                    else addIdea();
+                }
+            });
+        }
+
+        function loadIdeas() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                ideas = Array.isArray(parsed) ? parsed.map(normalizeIdea) : [];
+            } catch (_) {
+                ideas = [];
+            }
+        }
+
+        function saveIdeas() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+        }
+
+        function loadTheme() {
+            const saved = localStorage.getItem(THEME_KEY) || 'moss';
+            applyTheme(saved, false);
+        }
+
+        function applyTheme(theme, shouldNotify) {
+            const nextTheme = ['amber', 'moss', 'violet'].includes(theme) ? theme : 'moss';
+            document.documentElement.dataset.inspirationTheme = nextTheme;
+            els.themeSelect.value = nextTheme;
+            localStorage.setItem(THEME_KEY, nextTheme);
+            if (shouldNotify) notify(`已切换到 ${els.themeSelect.options[els.themeSelect.selectedIndex].text}`);
+        }
+
+        function saveDraft() {
+            const draft = {
+                title: els.ideaTitle.value,
+                content: els.ideaContent.value,
+                type: els.ideaType.value,
+                mood: els.ideaMood.value,
+                importance: Number(els.ideaImportance.value) || 3,
+                tags: els.ideaTags.value
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        }
+
+        function restoreDraft() {
+            try {
+                const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+                els.ideaTitle.value = draft.title || '';
+                els.ideaContent.value = draft.content || '';
+                els.ideaType.value = draft.type || 'idea';
+                els.ideaMood.value = draft.mood || 'fresh';
+                els.ideaImportance.value = clampImportance(draft.importance || 3);
+                els.ideaTags.value = draft.tags || '';
+            } catch (_) {}
+        }
+
+        function clearDraft(silent = false) {
+            els.ideaTitle.value = '';
+            els.ideaContent.value = '';
+            els.ideaType.value = 'idea';
+            els.ideaMood.value = 'fresh';
+            els.ideaImportance.value = '3';
+            els.ideaTags.value = '';
+            localStorage.removeItem(DRAFT_KEY);
+            if (!silent) notify('草稿已清空');
+        }
+
+        function addIdea() {
+            const title = els.ideaTitle.value.trim();
+            const content = els.ideaContent.value.trim();
+            if (!title && !content) {
+                notify('先写下一点内容吧', 'warning');
+                els.ideaContent.focus();
+                return;
+            }
+            const now = Date.now();
+            ideas.unshift({
+                id: generateId(),
+                title: title || makeTitle(content),
+                content,
+                type: els.ideaType.value,
+                mood: els.ideaMood.value,
+                importance: clampImportance(els.ideaImportance.value),
+                tags: parseTags(els.ideaTags.value),
+                pinned: false,
+                archived: false,
+                created: now,
+                createdDate: formatFullDate(now),
+                updated: now
+            });
+            saveIdeas();
+            clearDraft(true);
+            render();
+            notify('灵感已记录', 'success');
+        }
+
+        function render() {
+            renderStats();
+            renderTags();
+            renderIdeas();
+        }
+
+        function renderStats() {
+            const active = ideas.filter(item => !item.archived);
+            const tags = new Set(ideas.flatMap(item => item.tags || []));
+            els.totalCount.textContent = ideas.length;
+            els.activeCount.textContent = active.length;
+            els.pinnedCount.textContent = ideas.filter(item => item.pinned && !item.archived).length;
+            els.tagCount.textContent = tags.size;
+        }
+
+        function renderTags() {
+            const counts = {};
+            ideas.forEach(item => (item.tags || []).forEach(tag => counts[tag] = (counts[tag] || 0) + 1));
+            const tags = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, 'zh-CN'));
+            els.tagStrip.innerHTML = tags.map(tag => `
+                <button type="button" class="${currentTag === tag ? 'active' : ''}" data-tag="${escapeAttribute(tag)}">
+                    <span class="tag-name">${escapeHtml(tag)}</span><span class="tag-count">${counts[tag]}</span>
+                </button>
+            `).join('');
+            els.tagStrip.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentTag = currentTag === button.dataset.tag ? '' : button.dataset.tag;
+                    renderTags();
+                    renderIdeas();
+                });
+            });
+        }
+
+        function renderIdeas() {
+            renderStats();
+            const query = els.searchInput.value.trim().toLowerCase();
+            const type = els.typeFilter.value;
+            const dateFilter = els.dateFilter.value;
+            let list = ideas.filter(item => {
+                if (currentView === 'active' && item.archived) return false;
+                if (currentView === 'pinned' && (!item.pinned || item.archived)) return false;
+                if (currentView === 'archived' && !item.archived) return false;
+                if (type !== 'all' && item.type !== type) return false;
+                if (!matchesDateFilter(item, dateFilter)) return false;
+                if (currentTag && !(item.tags || []).includes(currentTag)) return false;
+                if (!query) return true;
+                const haystack = [item.title, item.content, item.type, item.mood, item.importance, ...(item.tags || [])].join(' ').toLowerCase();
+                return haystack.includes(query);
+            });
+
+            list.sort((a, b) => {
+                if (els.sortSelect.value === 'title') return a.title.localeCompare(b.title, 'zh-CN');
+                if (els.sortSelect.value === 'created') return b.created - a.created;
+                if (els.sortSelect.value === 'importance') return b.importance - a.importance || b.updated - a.updated;
+                return b.updated - a.updated;
+            });
+            list.sort((a, b) => Number(b.pinned) - Number(a.pinned));
+
+            els.emptyState.style.display = list.length ? 'none' : 'grid';
+            els.ideasList.innerHTML = list.map(renderIdeaCard).join('');
+            els.ideasList.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', handleCardAction));
+            els.ideasList.querySelectorAll('.idea-card').forEach(card => {
+                card.addEventListener('click', event => { if (!event.target.closest('button')) openModal(card.dataset.id); });
+            });
+        }
+
+        function renderIdeaCard(item) {
+            const tags = (item.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join('');
+            const preview = item.content ? escapeHtml(item.content) : '<em>没有正文</em>';
+            return `
+                <article class="idea-card ${item.pinned ? 'pinned' : ''}" data-id="${escapeAttribute(item.id)}">
+                    <div class="idea-card-head">
+                        <div>
+                            <div class="idea-title">${escapeHtml(item.title)}</div>
+                            <div class="idea-date">记录于 ${escapeHtml(item.createdDate || formatFullDate(item.created))}</div>
+                        </div>
+                        <div class="idea-actions">
+                            <button type="button" class="${item.pinned ? 'active-pin' : ''}" data-action="pin" data-id="${escapeAttribute(item.id)}" title="${item.pinned ? '取消置顶' : '置顶'}" aria-label="${item.pinned ? '取消置顶' : '置顶'}">↑</button>
+                            <button type="button" data-action="archive" data-id="${escapeAttribute(item.id)}" title="${item.archived ? '移回灵感记录箱' : '归档'}" aria-label="${item.archived ? '移回灵感记录箱' : '归档'}">${item.archived ? '↩' : '✓'}</button>
+                            <button type="button" data-action="copy" data-id="${escapeAttribute(item.id)}" title="复制文本" aria-label="复制文本">⧉</button>
+                        </div>
+                    </div>
+                    <p class="idea-preview">${preview}</p>
+                    <div class="idea-meta">
+                        <span>${typeLabel[item.type] || '想法'}</span>
+                        <span>${moodLabel[item.mood] || '刚冒出来'}</span>
+                        <span class="importance-badge">${renderStars(item.importance)}</span>
+                    </div>
+                    <div class="idea-tags">${tags}</div>
+                </article>
+            `;
+        }
+
+        function handleCardAction(event) {
+            event.stopPropagation();
+            const id = event.currentTarget.dataset.id;
+            const action = event.currentTarget.dataset.action;
+            if (action === 'pin') togglePin(id);
+            if (action === 'archive') toggleArchive(id);
+            if (action === 'copy') copyIdea(id);
+        }
+
+        function togglePin(id) {
+            const idea = ideas.find(item => item.id === id);
+            if (!idea) return;
+            idea.pinned = !idea.pinned;
+            idea.updated = Date.now();
+            saveIdeas();
+            render();
+        }
+
+        function toggleArchive(id) {
+            const idea = ideas.find(item => item.id === id);
+            if (!idea) return;
+            idea.archived = !idea.archived;
+            idea.updated = Date.now();
+            saveIdeas();
+            render();
+            notify(idea.archived ? '已归档' : '已移回灵感记录箱');
+        }
+
+        function openModal(id) {
+            const idea = ideas.find(item => item.id === id);
+            if (!idea) return;
+            editingId = id;
+            els.editTitle.value = idea.title;
+            els.editContent.value = idea.content;
+            els.editType.value = idea.type;
+            els.editMood.value = idea.mood;
+            els.editImportance.value = clampImportance(idea.importance);
+            els.editTags.value = (idea.tags || []).join(', ');
+            editSnapshot = getEditSnapshot();
+            els.saveEditBtn.classList.remove('has-changes');
+            els.ideaModal.classList.add('show');
+            els.ideaModal.setAttribute('aria-hidden', 'false');
+            els.editTitle.focus();
+        }
+
+        function closeModal(force = false) {
+            if (!force && editingId && hasUnsavedEdit() && !confirm('有未保存的修改，确定关闭吗？')) return;
+            els.ideaModal.classList.remove('show');
+            els.ideaModal.setAttribute('aria-hidden', 'true');
+            editingId = null;
+            editSnapshot = '';
+            els.saveEditBtn.classList.remove('has-changes');
+        }
+
+        function saveEditingIdea() {
+            if (!editingId) return;
+            const idea = ideas.find(item => item.id === editingId);
+            if (!idea) return;
+            const title = els.editTitle.value.trim();
+            const content = els.editContent.value.trim();
+            if (!title && !content) {
+                notify('标题和内容不能都为空', 'warning');
+                return;
+            }
+            idea.title = title || makeTitle(content);
+            idea.content = content;
+            idea.type = els.editType.value;
+            idea.mood = els.editMood.value;
+            idea.importance = clampImportance(els.editImportance.value);
+            idea.tags = parseTags(els.editTags.value);
+            idea.updated = Date.now();
+            saveIdeas();
+            closeModal(true);
+            render();
+            notify('修改已保存', 'success');
+        }
+
+        function deleteEditingIdea() {
+            if (!editingId || !confirm('确定删除这条灵感吗？')) return;
+            ideas = ideas.filter(item => item.id !== editingId);
+            saveIdeas();
+            closeModal(true);
+            render();
+            notify('已删除');
+        }
+
+        function copyEditingIdea() {
+            if (editingId) copyIdea(editingId);
+        }
+
+        function copyIdea(id) {
+            const idea = ideas.find(item => item.id === id);
+            if (!idea) return;
+            const text = buildMarkdown(idea);
+            navigator.clipboard.writeText(text).then(
+                () => notify('已复制 Markdown 到剪贴板', 'success'),
+                () => notify('复制失败，请手动复制', 'warning')
+            );
+        }
+
+        function exportIdeas() {
+            const payload = { schema: 'cc-inspiration-export-v1', exportedAt: new Date().toISOString(), ideas };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `cc-inspirations-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            notify('导出完成', 'success');
+        }
+
+        function importIdeas(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const payload = JSON.parse(reader.result);
+                    const incoming = Array.isArray(payload) ? payload : payload.ideas;
+                    if (!Array.isArray(incoming)) throw new Error('invalid');
+                    const existing = new Set(ideas.map(item => item.id));
+                    incoming.forEach(item => {
+                        const normalized = normalizeIdea(item);
+                        if (existing.has(normalized.id)) normalized.id = generateId();
+                        ideas.push(normalized);
+                    });
+                    saveIdeas();
+                    render();
+                    notify('导入完成', 'success');
+                } catch (_) {
+                    notify('导入失败，文件格式不对', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function normalizeIdea(item) {
+            const now = Date.now();
+            return {
+                id: item.id || generateId(),
+                title: item.title || makeTitle(item.content || ''),
+                content: item.content || '',
+                type: typeLabel[item.type] ? item.type : 'idea',
+                mood: moodLabel[item.mood] ? item.mood : 'fresh',
+                importance: clampImportance(item.importance || 3),
+                tags: Array.isArray(item.tags) ? item.tags.map(String) : [],
+                pinned: Boolean(item.pinned),
+                archived: Boolean(item.archived),
+                created: Number(item.created) || now,
+                createdDate: item.createdDate || formatFullDate(Number(item.created) || now),
+                updated: Number(item.updated) || now
+            };
+        }
+
+        function rotatePrompt(showMessage) {
+            const current = els.promptText.textContent;
+            let next = prompts[Math.floor(Math.random() * prompts.length)];
+            while (prompts.length > 1 && next === current) next = prompts[Math.floor(Math.random() * prompts.length)];
+            els.promptText.textContent = next;
+            if (showMessage) notify('启发问题已更新');
+        }
+
+        function parseTags(value) {
+            return value.split(/[,，\s]+/).map(tag => tag.trim()).filter(Boolean)
+                .filter((tag, index, list) => list.indexOf(tag) === index).slice(0, 8);
+        }
+
+        function matchesDateFilter(item, filter) {
+            if (filter === 'all') return true;
+            if (filter === 'untagged') return !item.tags || item.tags.length === 0;
+            const created = Number(item.created) || 0;
+            const now = new Date();
+            const start = new Date(now);
+            if (filter === 'today') {
+                start.setHours(0, 0, 0, 0);
+                return created >= start.getTime();
+            }
+            if (filter === 'week') return created >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+            if (filter === 'month') return created >= Date.now() - 30 * 24 * 60 * 60 * 1000;
+            return true;
+        }
+
+        function getEditSnapshot() {
+            return JSON.stringify({
+                title: els.editTitle.value.trim(),
+                content: els.editContent.value.trim(),
+                type: els.editType.value,
+                mood: els.editMood.value,
+                importance: clampImportance(els.editImportance.value),
+                tags: parseTags(els.editTags.value)
+            });
+        }
+
+        function hasUnsavedEdit() {
+            return editSnapshot && getEditSnapshot() !== editSnapshot;
+        }
+
+        function markModalChanged() {
+            if (!editingId) return;
+            els.saveEditBtn.classList.toggle('has-changes', hasUnsavedEdit());
+        }
+
+        function buildMarkdown(idea) {
+            const tags = (idea.tags || []).map(tag => `#${tag}`).join(' ');
+            return [
+                `# ${idea.title}`,
+                '',
+                `重要性：${renderStars(idea.importance)}`,
+                `类型：${typeLabel[idea.type] || '想法'}`,
+                `状态：${moodLabel[idea.mood] || '刚冒出来'}`,
+                `记录于：${idea.createdDate || formatFullDate(idea.created)}`,
+                tags ? `标签：${tags}` : '标签：未标签',
+                '',
+                idea.content || ''
+            ].join('\n').trim();
+        }
+
+        function clampImportance(value) {
+            return Math.min(6, Math.max(1, Number(value) || 3));
+        }
+
+        function renderStars(value) {
+            return '⭐'.repeat(clampImportance(value));
+        }
+
+        function makeTitle(content) {
+            const clean = String(content || '').replace(/\s+/g, ' ').trim();
+            return clean ? clean.slice(0, 24) : '未命名灵感';
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const diff = Date.now() - date.getTime();
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+            return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+        }
+
+        function formatFullDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function notify(message, type = 'info') {
+            if (typeof window.ccShowTip === 'function') window.ccShowTip(message, type);
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            }[char]));
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value).replace(/`/g, '&#096;');
+        }
+
+        init();
+    </script>
+    <script src="cc-common.js?v=2.1.4"></script>
+</body>
+</html>

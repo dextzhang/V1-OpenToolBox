@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-todo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超超Todo - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=3.3.2">
+    <style>
+        html[data-page="cc-todo"] {
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f5f5f5;
+            --text-secondary: rgba(255, 255, 255, 0.5);
+            --accent-color: #8b9dc3;
+            --accent-gradient: linear-gradient(135deg, #8b9dc3 0%, #a8b9d0 100%);
+            --once-color: #8b9dc3;
+            --daily-color: #a8c6a0;
+            --recurring-color: #c9b1d4;
+        }
+
+        html[data-page="cc-todo"] body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1e1e24 0%, #252530 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+        }
+
+        html[data-page="cc-todo"] .todo-app {
+            max-width: 92%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        html[data-page="cc-todo"] .todo-header {
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+
+        html[data-page="cc-todo"] .todo-header .eyebrow {
+            color: rgba(255,255,255,0.35);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.8rem;
+        }
+
+        html[data-page="cc-todo"] .todo-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.4rem;
+            background: linear-gradient(135deg, #b0c4de 0%, #d4c4b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        html[data-page="cc-todo"] .todo-header .subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+        }
+
+        html[data-page="cc-todo"] .daily-quote {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+
+        html[data-page="cc-todo"] .quote-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        html[data-page="cc-todo"] .daily-quote .quote-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            line-height: 1.5;
+        }
+
+        html[data-page="cc-todo"] .daily-quote .quote-author {
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        html[data-page="cc-todo"] .quote-actions {
+            display: flex;
+            gap: 0.4rem;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        html[data-page="cc-todo"] .quote-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        html[data-page="cc-todo"] .quote-btn:hover {
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* 添加栏 - 两行布局 */
+        html[data-page="cc-todo"] .add-bar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row.top-row {
+            width: 100%;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row.bottom-row {
+            width: 100%;
+            padding-left: 0.2rem;
+        }
+
+        /* 筛选栏 */
+        html[data-page="cc-todo"] .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.2rem;
+            padding: 0.6rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        html[data-page="cc-todo"] .filter-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        html[data-page="cc-todo"] .star-filter-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo"] .star-filter-btn {
+            padding: 0.35rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        html[data-page="cc-todo"] .star-filter-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        html[data-page="cc-todo"] .star-filter-btn.active {
+            background: rgba(139, 157, 195, 0.2);
+            color: #c5d0e5;
+            border-color: rgba(139, 157, 195, 0.3);
+        }
+
+        html[data-page="cc-todo"] .star-filter-btn .filter-star {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.7rem;
+        }
+
+        html[data-page="cc-todo"] .star-filter-btn.active .filter-star {
+            color: #ffd700;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .input-field {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 0.7rem 0.8rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .input-field:focus {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .type-selector {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .type-btn {
+            padding: 0.5rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .type-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .type-btn.active {
+            background: rgba(139, 157, 195, 0.2);
+            color: #c5d0e5;
+            border-color: rgba(139, 157, 195, 0.3);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .star-rating {
+            display: flex;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .star {
+            font-size: 1rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.12);
+            transition: all 0.15s;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .star:hover,
+        html[data-page="cc-todo"] .add-bar-row .star.active {
+            color: #ffd700;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .color-picker {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .color-option {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .color-option.active {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .tag-input {
+            width: 90px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 0.5rem 0.6rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .tag-input:focus {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        html[data-page="cc-todo"] .add-bar-row .tag-input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        html[data-page="cc-todo"] .add-submit-btn {
+            padding: 0.6rem 1.4rem;
+            background: rgba(176, 196, 222, 0.25);
+            border: 1px solid rgba(176, 196, 222, 0.4);
+            border-radius: 8px;
+            color: #e8eef5;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
+        html[data-page="cc-todo"] .add-submit-btn:hover {
+            background: rgba(176, 196, 222, 0.4);
+            border-color: rgba(176, 196, 222, 0.55);
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(176, 196, 222, 0.2);
+        }
+
+        html[data-page="cc-todo"] .add-submit-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* 待办列 */
+        html[data-page="cc-todo"] .todo-columns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        html[data-page="cc-todo"] .todo-column {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 1rem;
+            min-height: 200px;
+        }
+
+        html[data-page="cc-todo"] .column-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        html[data-page="cc-todo"] .column-header .col-icon {
+            font-size: 0.9rem;
+        }
+
+        html[data-page="cc-todo"] .todo-count {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: auto;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo"] #once-column { border-top: 2px solid rgba(139, 157, 195, 0.4); }
+        html[data-page="cc-todo"] #daily-column { border-top: 2px solid rgba(168, 198, 160, 0.4); }
+        html[data-page="cc-todo"] #recurring-column { border-top: 2px solid rgba(201, 177, 212, 0.4); }
+
+        /* 待办卡片 */
+        html[data-page="cc-todo"] .todo-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.7rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            position: relative;
+            cursor: grab;
+        }
+
+        html[data-page="cc-todo"] .todo-card.dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+        }
+
+        html[data-page="cc-todo"] .todo-card.drag-over {
+            border-color: rgba(102, 126, 234, 0.3);
+            background: rgba(102, 126, 234, 0.06);
+        }
+
+        html[data-page="cc-todo"] .todo-card.pinned {
+            border-color: rgba(212, 196, 176, 0.4);
+            background: rgba(212, 196, 176, 0.08);
+            box-shadow: 0 0 12px rgba(212, 196, 176, 0.1);
+        }
+
+        html[data-page="cc-todo"] .todo-card.pinned:hover {
+            border-color: rgba(212, 196, 176, 0.55);
+            background: rgba(212, 196, 176, 0.12);
+            box-shadow: 0 0 16px rgba(212, 196, 176, 0.15);
+        }
+
+        html[data-page="cc-todo"] .todo-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        html[data-page="cc-todo"] .todo-card.completed {
+            opacity: 0.4;
+        }
+
+        html[data-page="cc-todo"] .todo-color-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            border-radius: 10px 0 0 10px;
+        }
+
+        html[data-page="cc-todo"] .todo-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        html[data-page="cc-todo"] .todo-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        html[data-page="cc-todo"] .todo-text-wrap {
+            flex: 1;
+            min-width: 0;
+        }
+
+        html[data-page="cc-todo"] .todo-text {
+            font-size: 0.8rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        html[data-page="cc-todo"] .todo-text.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        html[data-page="cc-todo"] .todo-time {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.25);
+            margin-top: 0.2rem;
+        }
+
+        html[data-page="cc-todo"] .todo-card-stars {
+            display: flex;
+            gap: 1px;
+            flex-shrink: 0;
+            cursor: pointer;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo"] .pin-indicator {
+            font-size: 0.75rem;
+            margin-right: 3px;
+            opacity: 0.7;
+        }
+
+        html[data-page="cc-todo"] .todo-card-stars .card-star {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.12);
+            transition: color 0.15s;
+            cursor: pointer;
+        }
+
+        html[data-page="cc-todo"] .todo-card-stars .card-star.filled {
+            color: #ffd700;
+        }
+
+        html[data-page="cc-todo"] .todo-card-stars .card-star:hover {
+            color: #ffd700;
+            transform: scale(1.2);
+        }
+
+        html[data-page="cc-todo"] .todo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        html[data-page="cc-todo"] .todo-tag {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo"] .todo-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        html[data-page="cc-todo"] .todo-card:hover .todo-actions {
+            opacity: 1;
+        }
+
+        html[data-page="cc-todo"] .todo-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 2px;
+            font-size: 0.7rem;
+            transition: color 0.15s;
+        }
+
+        html[data-page="cc-todo"] .todo-action-btn:hover {
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo"] .todo-action-btn.pinned-btn.active {
+            color: #ffd700;
+        }
+
+        html[data-page="cc-todo"] .todo-action-btn.delete:hover {
+            color: #ff6b6b;
+        }
+
+        html[data-page="cc-todo"] .empty-state {
+            text-align: center;
+            padding: 1.5rem 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        html[data-page="cc-todo"] .empty-state .icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.3;
+        }
+
+        /* 已完成区域 */
+        html[data-page="cc-todo"] .completed-sections {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            max-height: 320px;
+        }
+
+        html[data-page="cc-todo"] .completed-section {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 0.8rem;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        html[data-page="cc-todo"] .completed-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo"] .completed-header .reset-hint {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.25);
+            margin-left: auto;
+            font-weight: 400;
+        }
+
+        html[data-page="cc-todo"] #completed-once-section { border-top: 2px solid rgba(139, 157, 195, 0.2); }
+        html[data-page="cc-todo"] #completed-daily-section { border-top: 2px solid rgba(168, 198, 160, 0.2); }
+        html[data-page="cc-todo"] #completed-recurring-section { border-top: 2px solid rgba(201, 177, 212, 0.2); }
+
+        /* 模态框 */
+        html[data-page="cc-todo"] .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        html[data-page="cc-todo"] .modal-overlay.active {
+            display: flex;
+        }
+
+        html[data-page="cc-todo"] .modal {
+            background: rgba(35, 35, 40, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        html[data-page="cc-todo"] .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo"] .modal-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        html[data-page="cc-todo"] .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.4rem;
+            transition: color 0.2s;
+        }
+
+        html[data-page="cc-todo"] .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo"] .modal-content {
+            padding: 1rem;
+            max-height: calc(80vh - 60px);
+            overflow-y: auto;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group {
+            margin-bottom: 0.8rem;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 0.6rem 0.7rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .input-field:focus {
+            border-color: rgba(139, 157, 195, 0.3);
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .type-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .type-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .type-btn.active {
+            background: rgba(139, 157, 195, 0.2);
+            color: #c5d0e5;
+            border-color: rgba(139, 157, 195, 0.3);
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .star-rating {
+            display: flex;
+            gap: 4px;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .star {
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.12);
+            transition: all 0.15s;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .star:hover,
+        html[data-page="cc-todo"] .edit-form-group .star.active {
+            color: #ffd700;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .color-picker {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .color-option {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        html[data-page="cc-todo"] .edit-form-group .color-option.active {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        html[data-page="cc-todo"] .edit-btn-group {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+        }
+
+        html[data-page="cc-todo"] .edit-btn-group button {
+            flex: 1;
+            padding: 0.6rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        html[data-page="cc-todo"] .edit-save-btn {
+            background: rgba(139, 157, 195, 0.2);
+            border: 1px solid rgba(139, 157, 195, 0.3);
+            color: #c5d0e5;
+        }
+
+        html[data-page="cc-todo"] .edit-save-btn:hover {
+            background: rgba(139, 157, 195, 0.3);
+        }
+
+        html[data-page="cc-todo"] .edit-cancel-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo"] .edit-cancel-btn:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        html[data-page="cc-todo"] .saved-quote-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.8rem;
+            margin-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.6rem;
+        }
+
+        html[data-page="cc-todo"] .saved-quote-text {
+            flex: 1;
+        }
+
+        html[data-page="cc-todo"] .saved-quote-text .text {
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+            line-height: 1.5;
+        }
+
+        html[data-page="cc-todo"] .saved-quote-text .author {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo"] .saved-quote-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        html[data-page="cc-todo"] .saved-quote-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 0.75rem;
+            transition: color 0.15s;
+        }
+
+        html[data-page="cc-todo"] .saved-quote-btn:hover {
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo"] .saved-quote-btn.delete:hover {
+            color: #ff6b6b;
+        }
+
+        html[data-page="cc-todo"] .no-saved-quotes {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 1200px) {
+            html[data-page="cc-todo"] .todo-columns,
+            html[data-page="cc-todo"] .completed-sections {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            html[data-page="cc-todo"] .todo-columns,
+            html[data-page="cc-todo"] .completed-sections {
+                grid-template-columns: 1fr;
+            }
+            html[data-page="cc-todo"] .add-bar-row {
+                flex-wrap: wrap;
+            }
+            html[data-page="cc-todo"] .daily-quote {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            html[data-page="cc-todo"] .todo-app {
+                padding: 0.6rem;
+            }
+            html[data-page="cc-todo"] .todo-header h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-app">
+        <header class="todo-header">
+            <p class="eyebrow">TODO LIST</p>
+            <h1>超超Todo</h1>
+            <p class="subtitle">高效管理你的待办事项</p>
+        </header>
+
+        <div class="daily-quote" id="daily-quote">
+            <div class="quote-content">
+                <div class="quote-text" id="quote-text">最重要的事情永远不是紧急的事情。</div>
+                <div class="quote-author" id="quote-author">— 史蒂芬·柯维</div>
+            </div>
+            <div class="quote-actions">
+                <button class="quote-btn" onclick="saveCurrentQuote()" title="保存鸡汤">💾</button>
+                <button class="quote-btn" onclick="refreshQuote()" title="换一句">🔄</button>
+                <button class="quote-btn" onclick="openSavedQuotes()" title="查看保存的鸡汤">📚</button>
+            </div>
+        </div>
+
+        <div class="add-bar">
+            <div class="add-bar-row top-row">
+                <input type="text" class="input-field" id="todo-input" placeholder="输入待办事项..." onkeypress="if(event.key==='Enter')addTodo()">
+            </div>
+            <div class="add-bar-row bottom-row">
+                <div class="star-rating" id="star-rating">
+                    <span class="star active" data-star="1" onclick="setStars(1)">★</span>
+                    <span class="star" data-star="2" onclick="setStars(2)">★</span>
+                    <span class="star" data-star="3" onclick="setStars(3)">★</span>
+                    <span class="star" data-star="4" onclick="setStars(4)">★</span>
+                    <span class="star" data-star="5" onclick="setStars(5)">★</span>
+                </div>
+                <input type="text" class="tag-input" id="todo-tag" placeholder="标签">
+                <div class="color-picker" id="color-picker">
+                    <div class="color-option active" data-color="" style="background: rgba(255, 255, 255, 0.15);" onclick="selectColor('')"></div>
+                    <div class="color-option" data-color="#667eea" style="background: #667eea;" onclick="selectColor('#667eea')"></div>
+                    <div class="color-option" data-color="#f093fb" style="background: #f093fb;" onclick="selectColor('#f093fb')"></div>
+                    <div class="color-option" data-color="#4facfe" style="background: #4facfe;" onclick="selectColor('#4facfe')"></div>
+                    <div class="color-option" data-color="#43e97b" style="background: #43e97b;" onclick="selectColor('#43e97b')"></div>
+                    <div class="color-option" data-color="#fa709a" style="background: #fa709a;" onclick="selectColor('#fa709a')"></div>
+                    <div class="color-option" data-color="#ffd93d" style="background: #ffd93d;" onclick="selectColor('#ffd93d')"></div>
+                    <div class="color-option" data-color="#ff6b6b" style="background: #ff6b6b;" onclick="selectColor('#ff6b6b')"></div>
+                    <div class="color-option" data-color="#a8e6cf" style="background: #a8e6cf;" onclick="selectColor('#a8e6cf')"></div>
+                </div>
+                <div class="type-selector">
+                    <button class="type-btn active" data-type="once" onclick="selectType('once')">一次性</button>
+                    <button class="type-btn" data-type="daily" onclick="selectType('daily')">每日</button>
+                    <button class="type-btn" data-type="weekly" onclick="selectType('weekly')">每周</button>
+                    <button class="type-btn" data-type="monthly" onclick="selectType('monthly')">每月</button>
+                </div>
+                <button class="add-submit-btn" onclick="addTodo()">+ 添加</button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <span class="filter-label">优先级筛选</span>
+            <div class="star-filter-group">
+                <button class="star-filter-btn active" data-stars="0" onclick="setStarFilter(0)">全部</button>
+                <button class="star-filter-btn" data-stars="1" onclick="setStarFilter(1)"><span class="filter-star">★</span>1星</button>
+                <button class="star-filter-btn" data-stars="2" onclick="setStarFilter(2)"><span class="filter-star">★</span>2星</button>
+                <button class="star-filter-btn" data-stars="3" onclick="setStarFilter(3)"><span class="filter-star">★</span>3星</button>
+                <button class="star-filter-btn" data-stars="4" onclick="setStarFilter(4)"><span class="filter-star">★</span>4星</button>
+                <button class="star-filter-btn" data-stars="5" onclick="setStarFilter(5)"><span class="filter-star">★</span>5星</button>
+            </div>
+        </div>
+
+        <div class="todo-columns">
+            <div class="todo-column" id="once-column">
+                <div class="column-header">
+                    <span class="col-icon">📋</span> 一次性
+                    <span class="todo-count" id="once-count">0</span>
+                </div>
+                <div id="once-list"></div>
+            </div>
+            <div class="todo-column" id="daily-column">
+                <div class="column-header">
+                    <span class="col-icon">🌅</span> 每日
+                    <span class="todo-count" id="daily-count">0</span>
+                </div>
+                <div id="daily-list"></div>
+            </div>
+            <div class="todo-column" id="recurring-column">
+                <div class="column-header">
+                    <span class="col-icon">🔄</span> 周期
+                    <span class="todo-count" id="recurring-count">0</span>
+                </div>
+                <div id="recurring-list"></div>
+            </div>
+        </div>
+
+        <div class="completed-sections" id="completed-sections" style="display: none;">
+            <div class="completed-section" id="completed-once-section">
+                <div class="completed-header">
+                    ✅ 一次性·已完成
+                    <span class="todo-count" id="completed-once-count">0</span>
+                </div>
+                <div id="completed-once-list"></div>
+            </div>
+            <div class="completed-section" id="completed-daily-section">
+                <div class="completed-header">
+                    ✅ 每日·已完成
+                    <span class="reset-hint">次日凌晨重置</span>
+                    <span class="todo-count" id="completed-daily-count">0</span>
+                </div>
+                <div id="completed-daily-list"></div>
+            </div>
+            <div class="completed-section" id="completed-recurring-section">
+                <div class="completed-header">
+                    ✅ 周期·已完成
+                    <span class="reset-hint">周一/每月1号重置</span>
+                    <span class="todo-count" id="completed-recurring-count">0</span>
+                </div>
+                <div id="completed-recurring-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="saved-quotes-modal" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title">📚 我的鸡汤库</span>
+                <button class="modal-close" onclick="closeSavedQuotes()">×</button>
+            </div>
+            <div class="modal-content" id="saved-quotes-content"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal" onclick="closeEditModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title">✏️ 编辑待办</span>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="edit-form-group">
+                    <label>待办内容</label>
+                    <input type="text" class="input-field" id="edit-todo-input" placeholder="输入要做的事情...">
+                </div>
+                <div class="edit-form-group">
+                    <label>类型</label>
+                    <div class="type-selector" id="edit-type-selector">
+                        <button class="type-btn" data-type="once" onclick="selectEditType('once')">一次性</button>
+                        <button class="type-btn" data-type="daily" onclick="selectEditType('daily')">每日</button>
+                        <button class="type-btn" data-type="weekly" onclick="selectEditType('weekly')">每周</button>
+                        <button class="type-btn" data-type="monthly" onclick="selectEditType('monthly')">每月</button>
+                    </div>
+                </div>
+                <div class="edit-form-group">
+                    <label>重要程度</label>
+                    <div class="star-rating" id="edit-star-rating">
+                        <span class="star" data-star="1" onclick="setEditStars(1)">★</span>
+                        <span class="star" data-star="2" onclick="setEditStars(2)">★</span>
+                        <span class="star" data-star="3" onclick="setEditStars(3)">★</span>
+                        <span class="star" data-star="4" onclick="setEditStars(4)">★</span>
+                        <span class="star" data-star="5" onclick="setEditStars(5)">★</span>
+                    </div>
+                </div>
+                <div class="edit-form-group">
+                    <label>标签</label>
+                    <input type="text" class="input-field" id="edit-todo-tag" placeholder="工作 / 学习 / 生活...">
+                </div>
+                <div class="edit-form-group">
+                    <label>颜色</label>
+                    <div class="color-picker" id="edit-color-picker">
+                        <div class="color-option" data-color="" style="background: rgba(255, 255, 255, 0.15);" onclick="selectEditColor('')"></div>
+                        <div class="color-option" data-color="#667eea" style="background: #667eea;" onclick="selectEditColor('#667eea')"></div>
+                        <div class="color-option" data-color="#f093fb" style="background: #f093fb;" onclick="selectEditColor('#f093fb')"></div>
+                        <div class="color-option" data-color="#4facfe" style="background: #4facfe;" onclick="selectEditColor('#4facfe')"></div>
+                        <div class="color-option" data-color="#43e97b" style="background: #43e97b;" onclick="selectEditColor('#43e97b')"></div>
+                        <div class="color-option" data-color="#fa709a" style="background: #fa709a;" onclick="selectEditColor('#fa709a')"></div>
+                        <div class="color-option" data-color="#ffd93d" style="background: #ffd93d;" onclick="selectEditColor('#ffd93d')"></div>
+                        <div class="color-option" data-color="#ff6b6b" style="background: #ff6b6b;" onclick="selectEditColor('#ff6b6b')"></div>
+                        <div class="color-option" data-color="#a8e6cf" style="background: #a8e6cf;" onclick="selectEditColor('#a8e6cf')"></div>
+                    </div>
+                </div>
+                <div class="edit-btn-group">
+                    <button class="edit-cancel-btn" onclick="closeEditModal()">取消</button>
+                    <button class="edit-save-btn" onclick="saveEditTodo()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quotes = [
+            { text: "生活不是等待风暴过去，而是学会在雨中跳舞。", author: "维维安·格林" },
+            { text: "每一个不曾起舞的日子，都是对生命的辜负。", author: "尼采" },
+            { text: "把每一天都当成生命中的最后一天去过。", author: "史蒂夫·乔布斯" },
+            { text: "成功不是终点，失败也不是终结，唯有勇气才是永恒。", author: "温斯顿·丘吉尔" },
+            { text: "世界上只有一种真正的英雄主义，那就是在认清生活的真相后依然热爱生活。", author: "罗曼·罗兰" },
+            { text: "不要因为走得太远，而忘记当初为什么出发。", author: "纪伯伦" },
+            { text: "人生就像骑自行车，要保持平衡就得往前走。", author: "爱因斯坦" },
+            { text: "最重要的事情永远不是紧急的事情。", author: "史蒂芬·柯维" },
+            { text: "行动是治愈恐惧的良药，而犹豫拖延将不断滋养恐惧。", author: "戴尔·卡内基" },
+            { text: "你的时间有限，不要浪费在重复别人的生活上。", author: "史蒂夫·乔布斯" },
+            { text: "预测未来的最好方法就是去创造它。", author: "亚伯拉罕·林肯" },
+            { text: "困难只是暂时的，放弃才是永远的。", author: "未知" },
+            { text: "做你自己，因为别人都有人做了。", author: "奥斯卡·王尔德" },
+            { text: "最好的投资就是投资自己。", author: "沃伦·巴菲特" },
+            { text: "不要等待机会，而要创造机会。", author: "乔治·萧伯纳" },
+            { text: "成功的秘诀在于始终坚持自己的目标。", author: "本杰明·迪斯雷利" },
+            { text: "只有不断找寻机会的人才会及时把握机会。", author: "苏格拉底" },
+            { text: "勇气不是没有恐惧，而是面对恐惧并战胜它。", author: "纳尔逊·曼德拉" },
+            { text: "今天的努力是明天的实力。", author: "未知" },
+            { text: "相信自己，你比你想象的更强大。", author: "未知" },
+            { text: "种一棵树最好的时间是十年前，其次是现在。", author: "丹比萨·莫约" },
+            { text: "星光不问赶路人，时光不负有心人。", author: "大冰" },
+            { text: "你若盛开，清风自来。", author: "三毛" },
+            { text: "既然选择了远方，便只顾风雨兼程。", author: "汪国真" },
+            { text: "生活原本沉闷，但跑起来就有风。", author: "北野武" },
+            { text: "凡是过往，皆为序章。", author: "莎士比亚" },
+            { text: "愿你出走半生，归来仍是少年。", author: "孙光曼" },
+            { text: "人生没有白走的路，每一步都算数。", author: "李宗盛" },
+            { text: "乾坤未定，你我皆是黑马。", author: "未知" },
+            { text: "纵有疾风起，人生不言弃。", author: "瓦雷里" },
+            { text: "心若向阳，无畏悲伤。", author: "未知" },
+            { text: "路漫漫其修远兮，吾将上下而求索。", author: "屈原" },
+            { text: "天行健，君子以自强不息。", author: "《周易》" },
+            { text: "地势坤，君子以厚德载物。", author: "《周易》" },
+            { text: "不积跬步，无以至千里；不积小流，无以成江海。", author: "荀子" },
+            { text: "千里之行，始于足下。", author: "老子" },
+            { text: "博学之，审问之，慎思之，明辨之，笃行之。", author: "《中庸》" },
+            { text: "业精于勤，荒于嬉；行成于思，毁于随。", author: "韩愈" },
+            { text: "书山有路勤为径，学海无涯苦作舟。", author: "韩愈" },
+            { text: "宝剑锋从磨砺出，梅花香自苦寒来。", author: "《警世贤文》" },
+            { text: "长风破浪会有时，直挂云帆济沧海。", author: "李白" },
+            { text: "天生我材必有用，千金散尽还复来。", author: "李白" },
+            { text: "沉舟侧畔千帆过，病树前头万木春。", author: "刘禹锡" },
+            { text: "山重水复疑无路，柳暗花明又一村。", author: "陆游" },
+            { text: "纸上得来终觉浅，绝知此事要躬行。", author: "陆游" },
+            { text: "问渠那得清如许？为有源头活水来。", author: "朱熹" },
+            { text: "少年易老学难成，一寸光阴不可轻。", author: "朱熹" },
+            { text: "莫等闲，白了少年头，空悲切。", author: "岳飞" },
+            { text: "海纳百川，有容乃大；壁立千仞，无欲则刚。", author: "林则徐" },
+            { text: "苟利国家生死以，岂因祸福避趋之。", author: "林则徐" },
+            { text: "为中华之崛起而读书。", author: "周恩来" },
+            { text: "虚心使人进步，骄傲使人落后。", author: "毛泽东" },
+            { text: "世上无难事，只要肯登攀。", author: "毛泽东" },
+            { text: "星星之火，可以燎原。", author: "毛泽东" },
+            { text: "不管黑猫白猫，捉到老鼠就是好猫。", author: "邓小平" },
+            { text: "科学技术是第一生产力。", author: "邓小平" },
+            { text: "发展才是硬道理。", author: "邓小平" },
+            { text: "时间就是金钱，效率就是生命。", author: "袁庚" },
+            { text: "空谈误国，实干兴邦。", author: "习近平" },
+            { text: "幸福都是奋斗出来的。", author: "习近平" },
+            { text: "撸起袖子加油干。", author: "习近平" },
+            { text: "不忘初心，方得始终。", author: "《华严经》" },
+            { text: "己所不欲，勿施于人。", author: "孔子" },
+            { text: "三人行，必有我师焉。", author: "孔子" },
+            { text: "学而不思则罔，思而不学则殆。", author: "孔子" },
+            { text: "知之为知之，不知为不知，是知也。", author: "孔子" },
+            { text: "温故而知新，可以为师矣。", author: "孔子" },
+            { text: "逝者如斯夫，不舍昼夜。", author: "孔子" },
+            { text: "工欲善其事，必先利其器。", author: "孔子" },
+            { text: "君子坦荡荡，小人长戚戚。", author: "孔子" },
+            { text: "知之者不如好之者，好之者不如乐之者。", author: "孔子" },
+            { text: "学如不及，犹恐失之。", author: "孔子" },
+            { text: "见贤思齐焉，见不贤而内自省也。", author: "孔子" },
+            { text: "人无远虑，必有近忧。", author: "孔子" },
+            { text: "欲速则不达，见小利则大事不成。", author: "孔子" },
+            { text: "道不同，不相为谋。", author: "孔子" },
+            { text: "小不忍，则乱大谋。", author: "孔子" },
+            { text: "过而不改，是谓过矣。", author: "孔子" },
+            { text: "不患人之不己知，患不知人也。", author: "孔子" },
+            { text: "君子求诸己，小人求诸人。", author: "孔子" },
+            { text: "其身正，不令而行；其身不正，虽令不从。", author: "孔子" },
+            { text: "言必信，行必果。", author: "孔子" },
+            { text: "敏而好学，不耻下问。", author: "孔子" },
+            { text: "有则改之，无则加勉。", author: "朱熹" },
+            { text: "读书破万卷，下笔如有神。", author: "杜甫" },
+            { text: "会当凌绝顶，一览众山小。", author: "杜甫" },
+            { text: "春蚕到死丝方尽，蜡炬成灰泪始干。", author: "李商隐" },
+            { text: "落红不是无情物，化作春泥更护花。", author: "龚自珍" },
+            { text: "我劝天公重抖擞，不拘一格降人才。", author: "龚自珍" },
+            { text: "横眉冷对千夫指，俯首甘为孺子牛。", author: "鲁迅" },
+            { text: "其实地上本没有路，走的人多了，也便成了路。", author: "鲁迅" },
+            { text: "时间就像海绵里的水，只要愿挤，总还是有的。", author: "鲁迅" },
+            { text: "不在沉默中爆发，就在沉默中灭亡。", author: "鲁迅" },
+            { text: "真的猛士，敢于直面惨淡的人生，敢于正视淋漓的鲜血。", author: "鲁迅" },
+            { text: "愿中国青年都摆脱冷气，只是向上走。", author: "鲁迅" },
+            { text: "寄意寒星荃不察，我以我血荐轩辕。", author: "鲁迅" },
+            { text: "人生如逆旅，我亦是行人。", author: "苏轼" },
+            { text: "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。", author: "苏轼" },
+            { text: "大江东去，浪淘尽，千古风流人物。", author: "苏轼" },
+            { text: "但愿人长久，千里共婵娟。", author: "苏轼" },
+            { text: "不识庐山真面目，只缘身在此山中。", author: "苏轼" },
+            { text: "欲把西湖比西子，淡妆浓抹总相宜。", author: "苏轼" },
+            { text: "古之立大事者，不惟有超世之才，亦必有坚忍不拔之志。", author: "苏轼" },
+            { text: "博观而约取，厚积而薄发。", author: "苏轼" },
+            { text: "旧书不厌百回读，熟读深思子自知。", author: "苏轼" },
+            { text: "一年好景君须记，最是橙黄橘绿时。", author: "苏轼" }
+        ];
+
+        let currentStars = 3;
+        let currentType = 'once';
+        let currentColor = '';
+        let editingTodoId = null;
+        let editStars = 0;
+        let editType = 'once';
+        let editColor = '';
+        let draggedTodoId = null;
+        let currentFilter = 'all';
+        let currentStarFilter = 0;
+
+        function getDailyQuote() {
+            const today = new Date().toDateString();
+            const savedDate = localStorage.getItem('cc_todo_quote_date');
+            const savedIndex = localStorage.getItem('cc_todo_quote_index');
+            if (savedDate === today && savedIndex !== null) {
+                return quotes[parseInt(savedIndex)];
+            }
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            localStorage.setItem('cc_todo_quote_date', today);
+            localStorage.setItem('cc_todo_quote_index', randomIndex.toString());
+            return quotes[randomIndex];
+        }
+
+        function displayDailyQuote() {
+            const quote = getDailyQuote();
+            document.getElementById('quote-text').textContent = quote.text;
+            document.getElementById('quote-author').textContent = `— ${quote.author}`;
+        }
+
+        function refreshQuote() {
+            const today = new Date().toDateString();
+            let lastIndex = parseInt(localStorage.getItem('cc_todo_quote_index') || '0');
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * quotes.length);
+            } while (newIndex === lastIndex && quotes.length > 1);
+            localStorage.setItem('cc_todo_quote_date', today);
+            localStorage.setItem('cc_todo_quote_index', newIndex.toString());
+            displayDailyQuote();
+            showToast('已刷新');
+        }
+
+        function saveCurrentQuote() {
+            const quote = getDailyQuote();
+            let savedQuotes = JSON.parse(localStorage.getItem('cc_todo_saved_quotes') || '[]');
+            const exists = savedQuotes.some(q => q.text === quote.text);
+            if (exists) { showToast('已保存过'); return; }
+            if (savedQuotes.length >= 10) savedQuotes.shift();
+            savedQuotes.push(quote);
+            localStorage.setItem('cc_todo_saved_quotes', JSON.stringify(savedQuotes));
+            showToast('已保存');
+        }
+
+        function openSavedQuotes() {
+            const savedQuotes = JSON.parse(localStorage.getItem('cc_todo_saved_quotes') || '[]');
+            const content = document.getElementById('saved-quotes-content');
+            if (savedQuotes.length === 0) {
+                content.innerHTML = '<div class="no-saved-quotes">还没有保存的鸡汤</div>';
+            } else {
+                content.innerHTML = savedQuotes.map((quote, index) => `
+                    <div class="saved-quote-item">
+                        <div class="saved-quote-text">
+                            <div class="text">${escapeHtml(quote.text)}</div>
+                            <div class="author">— ${escapeHtml(quote.author)}</div>
+                        </div>
+                        <div class="saved-quote-actions">
+                            <button class="saved-quote-btn" onclick="useSavedQuote(${index})" title="使用">✓</button>
+                            <button class="saved-quote-btn delete" onclick="deleteSavedQuote(${index})" title="删除">🗑</button>
+                        </div>
+                    </div>
+                `).reverse().join('');
+            }
+            document.getElementById('saved-quotes-modal').classList.add('active');
+        }
+
+        function closeSavedQuotes() { document.getElementById('saved-quotes-modal').classList.remove('active'); }
+        function closeModalOnOverlay(event) { if (event.target === event.currentTarget) closeSavedQuotes(); }
+
+        function useSavedQuote(index) {
+            const savedQuotes = JSON.parse(localStorage.getItem('cc_todo_saved_quotes') || '[]');
+            const quote = savedQuotes[index];
+            if (quote) {
+                document.getElementById('quote-text').textContent = quote.text;
+                document.getElementById('quote-author').textContent = `— ${quote.author}`;
+                closeSavedQuotes();
+                showToast('已应用');
+            }
+        }
+
+        function deleteSavedQuote(index) {
+            let savedQuotes = JSON.parse(localStorage.getItem('cc_todo_saved_quotes') || '[]');
+            savedQuotes.splice(index, 1);
+            localStorage.setItem('cc_todo_saved_quotes', JSON.stringify(savedQuotes));
+            openSavedQuotes();
+        }
+
+        function getTodos() { return JSON.parse(localStorage.getItem('cc_todos') || '[]'); }
+        function saveTodos(todos) { localStorage.setItem('cc_todos', JSON.stringify(todos)); }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(isoString) {
+            const d = new Date(isoString);
+            const pad = n => n.toString().padStart(2, '0');
+            return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function selectType(type) {
+            currentType = type;
+            document.querySelectorAll('.add-bar .type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+        }
+
+        function setStars(count) {
+            currentStars = count;
+            document.querySelectorAll('#star-rating .star').forEach((star, index) => {
+                star.classList.toggle('active', index < count);
+            });
+        }
+
+        function selectColor(color) {
+            currentColor = color;
+            document.querySelectorAll('#color-picker .color-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.color === color);
+            });
+        }
+
+        function addTodo() {
+            const text = document.getElementById('todo-input').value.trim();
+            const tag = document.getElementById('todo-tag').value.trim();
+            if (!text) { showToast('请输入待办内容'); return; }
+            const todos = getTodos();
+            const todo = {
+                id: Date.now().toString(),
+                text, type: currentType, stars: currentStars, tag, color: currentColor,
+                completed: false, pinned: false, order: 0,
+                createdAt: new Date().toISOString()
+            };
+            // 插入到最上面：所有已有todo的order+1
+            todos.forEach(t => { t.order = (t.order || 0) + 1; });
+            todos.push(todo);
+            saveTodos(todos);
+            document.getElementById('todo-input').value = '';
+            document.getElementById('todo-tag').value = '';
+            setStars(3);
+            selectColor('');
+            renderTodos();
+            showToast('已添加');
+        }
+
+        function toggleTodo(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (todo) { todo.completed = !todo.completed; saveTodos(todos); renderTodos(); }
+        }
+
+        function deleteTodo(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (todo && (todo.type === 'daily' || todo.type === 'weekly' || todo.type === 'monthly')) {
+                if (!confirm('周期待办会自动恢复，确定删除吗？')) {
+                    return;
+                }
+            }
+            const newTodos = todos.filter(t => t.id !== id);
+            saveTodos(newTodos);
+            renderTodos();
+            showToast('已删除');
+        }
+
+        function togglePin(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.pinned = !todo.pinned;
+                saveTodos(todos);
+                renderTodos();
+                showToast(todo.pinned ? '已置顶' : '已取消置顶');
+            }
+        }
+
+        function updateTodoStars(id, count) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.stars = count;
+                saveTodos(todos);
+                renderTodos();
+            }
+        }
+
+        function openEditModal(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (!todo) return;
+            editingTodoId = id;
+            document.getElementById('edit-todo-input').value = todo.text;
+            document.getElementById('edit-todo-tag').value = todo.tag || '';
+            editType = todo.type;
+            editStars = todo.stars;
+            editColor = todo.color || '';
+            document.querySelectorAll('#edit-type-selector .type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === editType);
+            });
+            document.querySelectorAll('#edit-star-rating .star').forEach((star, index) => {
+                star.classList.toggle('active', index < editStars);
+            });
+            document.querySelectorAll('#edit-color-picker .color-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.color === editColor);
+            });
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+            editingTodoId = null;
+        }
+
+        function closeEditModalOnOverlay(event) {
+            if (event.target === event.currentTarget) closeEditModal();
+        }
+
+        function selectEditType(type) {
+            editType = type;
+            document.querySelectorAll('#edit-type-selector .type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+        }
+
+        function setEditStars(count) {
+            editStars = count;
+            document.querySelectorAll('#edit-star-rating .star').forEach((star, index) => {
+                star.classList.toggle('active', index < count);
+            });
+        }
+
+        function selectEditColor(color) {
+            editColor = color;
+            document.querySelectorAll('#edit-color-picker .color-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.color === color);
+            });
+        }
+
+        function saveEditTodo() {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === editingTodoId);
+            if (!todo) return;
+            todo.text = document.getElementById('edit-todo-input').value.trim();
+            todo.tag = document.getElementById('edit-todo-tag').value.trim();
+            todo.type = editType;
+            todo.stars = editStars;
+            todo.color = editColor;
+            saveTodos(todos);
+            renderTodos();
+            closeEditModal();
+            showToast('已保存');
+        }
+
+        function renderTodoCard(todo) {
+            const colorBar = todo.color ? `<div class="todo-color-bar" style="background: ${todo.color};"></div>` : '';
+            const pinIndicator = todo.pinned ? '<span class="pin-indicator">📌</span>' : '';
+            const starsHtml = Array(5).fill(0).map((_, i) =>
+                `<span class="card-star ${i < todo.stars ? 'filled' : ''}" onclick="updateTodoStars('${todo.id}', ${i + 1})">★</span>`
+            ).join('');
+            const timeHtml = todo.type === 'once' && todo.createdAt
+                ? `<div class="todo-time">${formatTime(todo.createdAt)}</div>`
+                : '';
+            return `
+                <div class="todo-card ${todo.completed ? 'completed' : ''} ${todo.pinned ? 'pinned' : ''}"
+                     draggable="true"
+                     data-todo-id="${todo.id}"
+                     ondragstart="dragStart(event, '${todo.id}')"
+                     ondragend="dragEnd(event)"
+                     ondragover="dragOver(event)"
+                     ondrop="drop(event, '${todo.id}')">
+                    ${colorBar}
+                    <div class="todo-card-header">
+                        <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}
+                               onchange="toggleTodo('${todo.id}')">
+                        <div class="todo-text-wrap">
+                            <span class="todo-text ${todo.completed ? 'completed' : ''}">${escapeHtml(todo.text)}</span>
+                            ${timeHtml}
+                        </div>
+                        <div class="todo-card-stars">${pinIndicator}${starsHtml}</div>
+                    </div>
+                    <div class="todo-footer">
+                        ${todo.tag ? `<span class="todo-tag">#${escapeHtml(todo.tag)}</span>` : '<span></span>'}
+                        <div class="todo-actions">
+                            <button class="todo-action-btn pinned-btn ${todo.pinned ? 'active' : ''}" onclick="togglePin('${todo.id}')" title="置顶">📌</button>
+                            <button class="todo-action-btn" onclick="openEditModal('${todo.id}')" title="编辑">✏️</button>
+                            <button class="todo-action-btn delete" onclick="deleteTodo('${todo.id}')" title="删除">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function sortTodos(todos) {
+            return [...todos].sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+                return 0;
+            });
+        }
+
+        function renderTodos() {
+            const todos = getTodos();
+            checkAndResetRecurringTodos(todos);
+            let sortedTodos = sortTodos(todos);
+
+            // 应用筛选
+            if (currentStarFilter > 0) {
+                sortedTodos = sortedTodos.filter(t => t.stars === currentStarFilter);
+            }
+
+            const onceTodos = sortedTodos.filter(t => t.type === 'once' && !t.completed);
+            const dailyTodos = sortedTodos.filter(t => t.type === 'daily' && !t.completed);
+            const weeklyTodos = sortedTodos.filter(t => t.type === 'weekly' && !t.completed);
+            const monthlyTodos = sortedTodos.filter(t => t.type === 'monthly' && !t.completed);
+
+            const completedOnce = sortedTodos.filter(t => t.type === 'once' && t.completed);
+            const completedDaily = sortedTodos.filter(t => t.type === 'daily' && t.completed);
+            const completedRecurring = sortedTodos.filter(t => (t.type === 'weekly' || t.type === 'monthly') && t.completed);
+
+            document.getElementById('once-list').innerHTML = onceTodos.length
+                ? onceTodos.map(renderTodoCard).join('')
+                : '<div class="empty-state"><div class="icon">📋</div><div>暂无</div></div>';
+
+            document.getElementById('daily-list').innerHTML = dailyTodos.length
+                ? dailyTodos.map(renderTodoCard).join('')
+                : '<div class="empty-state"><div class="icon">🌅</div><div>暂无</div></div>';
+
+            const recurringTodos = [...weeklyTodos, ...monthlyTodos];
+            document.getElementById('recurring-list').innerHTML = recurringTodos.length
+                ? recurringTodos.map(renderTodoCard).join('')
+                : '<div class="empty-state"><div class="icon">🔄</div><div>暂无</div></div>';
+
+            const completedSections = document.getElementById('completed-sections');
+            const hasCompleted = completedOnce.length + completedDaily.length + completedRecurring.length > 0;
+            completedSections.style.display = hasCompleted ? 'grid' : 'none';
+
+            document.getElementById('completed-once-list').innerHTML = completedOnce.length
+                ? completedOnce.map(renderTodoCard).join('')
+                : '<div class="empty-state">无</div>';
+            document.getElementById('completed-daily-list').innerHTML = completedDaily.length
+                ? completedDaily.map(renderTodoCard).join('')
+                : '<div class="empty-state">无</div>';
+            document.getElementById('completed-recurring-list').innerHTML = completedRecurring.length
+                ? completedRecurring.map(renderTodoCard).join('')
+                : '<div class="empty-state">无</div>';
+
+            document.getElementById('once-count').textContent = onceTodos.length;
+            document.getElementById('daily-count').textContent = dailyTodos.length;
+            document.getElementById('recurring-count').textContent = recurringTodos.length;
+            document.getElementById('completed-once-count').textContent = completedOnce.length;
+            document.getElementById('completed-daily-count').textContent = completedDaily.length;
+            document.getElementById('completed-recurring-count').textContent = completedRecurring.length;
+        }
+
+        function setStarFilter(stars) {
+            currentStarFilter = stars;
+            document.querySelectorAll('.star-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.stars) === stars);
+            });
+            renderTodos();
+        }
+
+        function checkAndResetRecurringTodos(todos) {
+            const now = new Date();
+            const lastCheck = localStorage.getItem('cc_todo_last_check');
+            const lastCheckDate = lastCheck ? new Date(lastCheck) : null;
+            if (!lastCheckDate || lastCheckDate.toDateString() !== now.toDateString()) {
+                todos.forEach(todo => {
+                    if (todo.completed) {
+                        if (todo.type === 'daily') {
+                            todo.completed = false;
+                        } else if (todo.type === 'weekly') {
+                            if (now.getDay() === 1) todo.completed = false;
+                        } else if (todo.type === 'monthly') {
+                            if (now.getDate() === 1) todo.completed = false;
+                        }
+                    }
+                });
+                saveTodos(todos);
+                localStorage.setItem('cc_todo_last_check', now.toISOString());
+            }
+        }
+
+        function dragStart(event, todoId) {
+            draggedTodoId = todoId;
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function dragEnd(event) {
+            event.target.classList.remove('dragging');
+            document.querySelectorAll('.todo-card').forEach(card => card.classList.remove('drag-over'));
+            draggedTodoId = null;
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            const card = event.target.closest('.todo-card');
+            if (card) card.classList.add('drag-over');
+        }
+
+        function drop(event, targetId) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!draggedTodoId || draggedTodoId === targetId) return;
+            const todos = getTodos();
+            const draggedTodo = todos.find(t => t.id === draggedTodoId);
+            const targetTodo = todos.find(t => t.id === targetId);
+            if (draggedTodo && targetTodo) {
+                const draggedOrder = draggedTodo.order;
+                draggedTodo.order = targetTodo.order;
+                targetTodo.order = draggedOrder;
+                saveTodos(todos);
+                renderTodos();
+            }
+        }
+
+        function showToast(message) {
+            const existing = document.querySelector('.todo-toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'todo-toast';
+            toast.style.cssText = `
+                position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+                background: rgba(255, 255, 255, 0.06); backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-primary);
+                padding: 10px 20px; border-radius: 8px; z-index: 1001; font-size: 0.8rem;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1800);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            displayDailyQuote();
+            setStars(3);
+            renderTodos();
+        });
+    </script>
+    <script src="cc-common.js?v=3.3.2"></script>
+</body>
+</html>

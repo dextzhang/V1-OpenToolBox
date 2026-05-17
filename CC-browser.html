@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-browser">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=2.2.0">
+</head>
+<body>
+    <div class="tab-bar" id="tabBar">
+        <div class="tab active" data-tab="0">
+            <span class="tab-title">新标签页</span>
+            <span class="tab-close" onclick="closeTab(0, event)">×</span>
+        </div>
+        <button class="new-tab-btn" onclick="createNewTab()">+</button>
+    </div>
+
+    <div class="toolbar">
+        <button class="nav-btn" onclick="window.location.href='index.html'" title="返回工具箱">🏠</button>
+        <button class="nav-btn" id="backBtn" onclick="goBack()" disabled title="后退">←</button>
+        <button class="nav-btn" id="forwardBtn" onclick="goForward()" disabled title="前进">→</button>
+        <button class="nav-btn" id="refreshBtn" onclick="refreshPage()" title="刷新">↻</button>
+        <button class="nav-btn" id="homeBtn" onclick="goHome()" title="主页">🏠</button>
+        <div class="address-bar">
+            <span class="security-icon" id="securityIcon">🔒</span>
+            <input type="text" id="urlInput" placeholder="输入网址或搜索内容..." onkeydown="handleUrlInput(event)">
+        </div>
+        <select id="browserOpenMode" class="browser-open-mode" onchange="setBrowserOpenMode(this.value)" title="打开方式">
+            <option value="internal">内部打开</option>
+            <option value="window">新窗口打开</option>
+        </select>
+        <button class="nav-btn" onclick="showAddBookmarkModal()" title="添加书签">⭐</button>
+        <button class="nav-btn" onclick="closeBrowserWindow()" title="关闭浏览器">✕</button>
+    </div>
+
+    <div class="webview-container" id="webviewContainer">
+        <div class="home-screen" id="homeScreen">
+            <h1 class="home-title">🌐 超超浏览器</h1>
+            <input type="text" class="home-search" id="homeSearchInput" placeholder="输入网址或搜索内容..." onkeydown="handleHomeSearch(event)">
+            <div class="quick-links"></div>
+        </div>
+
+        <div class="error-screen" id="errorScreen">
+            <div class="error-icon">⚠️</div>
+            <h2 class="error-title">页面加载失败</h2>
+            <p class="error-message" id="errorMessage">无法访问此页面，请检查网址是否正确。</p>
+            <button class="back-btn" style="margin-top:20px;" onclick="goHome()">返回新标签页</button>
+        </div>
+
+        <iframe id="webview0" class="webview-frame active" src="about:blank" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="loading-indicator" id="loadingIndicator"></div>
+            <span id="statusText">就绪</span>
+        </div>
+        <div class="status-item">
+            <span id="runtimeMode">检测环境中...</span>
+        </div>
+        <div class="status-item">
+            <span id="tabCount">1 个标签页</span>
+        </div>
+    </div>
+
+    <script>
+        const BROWSER_CONFIG = {
+            searchEngine: 'https://www.bing.com/search?q=',
+            tauriOpenStrategy: 'webview-window',
+            defaultWindowWidth: 1280,
+            defaultWindowHeight: 860,
+            externalSchemes: /^(mailto:|tel:|sms:|weixin:|alipay:)/i
+        };
+
+        const nativeWindowOpen = window.open ? window.open.bind(window) : null;
+        const OPEN_MODE_KEY = 'cc_browser_open_mode';
+
+        let tabs = [{ id: 0, url: 'about:blank', title: '新标签页', canGoBack: false, canGoForward: false }];
+        let activeTabId = 0;
+        let tabCounter = 1;
+        let quickLinks = [];
+
+        function isTauriRuntime() {
+            try {
+                if (typeof window.isTauri === 'function' && window.isTauri()) return true;
+                if (window.isTauri === true) return true;
+                if (window.__TAURI_INTERNALS__) return true;
+                if (window.__TAURI__) return true;
+                if (window.tauri) return true;
+            } catch (error) {
+                console.warn('Tauri runtime check failed:', error);
+            }
+            return false;
+        }
+
+        function getRuntimeLabel() {
+            return isTauriRuntime()
+                ? 'Tauri 模式：应用内打开'
+                : '普通浏览器模式：系统浏览器打开';
+        }
+
+        function updateRuntimeLabel() {
+            const modeEl = document.getElementById('runtimeMode');
+            if (modeEl) modeEl.textContent = getRuntimeLabel();
+        }
+
+        function getBrowserOpenMode(options = {}) {
+            return options.mode || localStorage.getItem(OPEN_MODE_KEY) || 'internal';
+        }
+
+        function setBrowserOpenMode(mode) {
+            localStorage.setItem(OPEN_MODE_KEY, mode === 'window' ? 'window' : 'internal');
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function normalizeUrl(input) {
+            let finalUrl = String(input || '').trim();
+            if (!finalUrl) return '';
+
+            if (BROWSER_CONFIG.externalSchemes.test(finalUrl)) return finalUrl;
+
+            if (!/^https?:\/\//i.test(finalUrl)) {
+                if (finalUrl.includes('.') && !finalUrl.includes(' ')) {
+                    finalUrl = 'https://' + finalUrl;
+                } else {
+                    finalUrl = BROWSER_CONFIG.searchEngine + encodeURIComponent(finalUrl);
+                }
+            }
+
+            return finalUrl;
+        }
+
+        function getTitleFromUrl(url) {
+            try {
+                const hostname = new URL(url).hostname;
+                return hostname.replace(/^www\./, '') || url.slice(0, 30);
+            } catch {
+                return String(url).slice(0, 30);
+            }
+        }
+
+        function setStatus(text, loading = false) {
+            const statusText = document.getElementById('statusText');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (statusText) statusText.textContent = text;
+            if (loadingIndicator) loadingIndicator.classList.toggle('show', Boolean(loading));
+        }
+
+        function loadQuickLinks() {
+            const saved = localStorage.getItem('browserQuickLinks');
+            if (saved) {
+                try {
+                    quickLinks = JSON.parse(saved);
+                } catch {
+                    quickLinks = [];
+                }
+            }
+
+            if (!Array.isArray(quickLinks) || quickLinks.length === 0) {
+                quickLinks = [
+                    { id: 1, name: 'Google', url: 'https://google.com', icon: '🔍' },
+                    { id: 2, name: 'GitHub', url: 'https://github.com', icon: '🐙' },
+                    { id: 3, name: '知乎', url: 'https://zhihu.com', icon: '💬' },
+                    { id: 4, name: 'Bing', url: 'https://bing.com', icon: '🌐' }
+                ];
+                saveQuickLinks();
+            }
+
+            renderQuickLinks();
+        }
+
+        function saveQuickLinks() {
+            localStorage.setItem('browserQuickLinks', JSON.stringify(quickLinks));
+        }
+
+        function renderQuickLinks() {
+            const container = document.querySelector('.quick-links');
+            if (!container) return;
+
+            container.innerHTML = quickLinks.map(link => `
+                <div class="quick-link" onclick="selectQuickLink(${Number(link.id)}, event)">
+                    <span class="icon">${escapeHTML(link.icon)}</span>
+                    <span class="label">${escapeHTML(link.name)}</span>
+                    <div class="quick-link-actions">
+                        <button onclick="event.stopPropagation(); editQuickLink(${Number(link.id)})" title="编辑">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteQuickLink(${Number(link.id)})" title="删除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML += `
+                <div class="quick-link add-quick-link" onclick="showQuickLinkModal()">
+                    <span class="icon">➕</span>
+                    <span class="label">添加</span>
+                </div>
+            `;
+        }
+
+        function selectQuickLink(id, event) {
+            event?.preventDefault?.();
+            const link = quickLinks.find(l => Number(l.id) === Number(id));
+            if (link) openSmart(link.url, { source: 'quick-link' });
+        }
+
+        function showQuickLinkModal(link = null) {
+            const icons = ['🔍', '🐙', '💬', '🌐', '📚', '🎬', '🎵', '🛒', '💼', '📰', '🎮', '⚙️'];
+            const modalHtml = `
+                <div class="modal-overlay show" id="quickLinkModal">
+                    <div class="modal">
+                        <h2>${link ? '编辑快速链接' : '添加快速链接'}</h2>
+                        <div class="form-group">
+                            <label>名称</label>
+                            <input type="text" id="qlName" placeholder="网站名称" value="${escapeHTML(link ? link.name : '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>网址</label>
+                            <input type="text" id="qlUrl" placeholder="https://example.com" value="${escapeHTML(link ? link.url : '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>图标</label>
+                            <div class="icon-picker" id="qlIconPicker">
+                                ${icons.map(icon => `
+                                    <button type="button" onclick="selectQuickLinkIcon(this, '${icon}')" class="${link && link.icon === icon ? 'selected' : ''}">${icon}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-secondary" onclick="closeQuickLinkModal()">取消</button>
+                            <button class="btn-primary" onclick="saveQuickLink(${link ? Number(link.id) : 'null'})">保存</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            window.selectedQuickLinkIcon = link ? link.icon : icons[0];
+            if (!link) document.querySelector('#qlIconPicker button')?.classList.add('selected');
+        }
+
+        function selectQuickLinkIcon(btn, icon) {
+            document.querySelectorAll('#qlIconPicker button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            window.selectedQuickLinkIcon = icon;
+        }
+
+        function editQuickLink(id) {
+            const link = quickLinks.find(l => Number(l.id) === Number(id));
+            if (link) showQuickLinkModal(link);
+        }
+
+        function deleteQuickLink(id) {
+            if (!confirm('确定删除此快速链接？')) return;
+            quickLinks = quickLinks.filter(l => Number(l.id) !== Number(id));
+            saveQuickLinks();
+            renderQuickLinks();
+            showToast('已删除');
+        }
+
+        function saveQuickLink(existingId) {
+            const name = document.getElementById('qlName').value.trim();
+            let url = document.getElementById('qlUrl').value.trim();
+            const icon = window.selectedQuickLinkIcon || '🔍';
+
+            if (!name || !url) {
+                showToast('请填写名称和网址');
+                return;
+            }
+
+            url = normalizeUrl(url);
+
+            if (existingId) {
+                const index = quickLinks.findIndex(l => Number(l.id) === Number(existingId));
+                if (index !== -1) quickLinks[index] = { ...quickLinks[index], name, url, icon };
+                showToast('已更新');
+            } else {
+                const newId = Math.max(0, ...quickLinks.map(l => Number(l.id) || 0)) + 1;
+                quickLinks.push({ id: newId, name, url, icon });
+                showToast('已添加');
+            }
+
+            saveQuickLinks();
+            renderQuickLinks();
+            closeQuickLinkModal();
+        }
+
+        function closeQuickLinkModal() {
+            document.getElementById('quickLinkModal')?.remove();
+        }
+
+        function showAddBookmarkModal() {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            const currentUrl = currentTab && currentTab.url !== 'about:blank' ? currentTab.url : '';
+            const currentTitle = currentTab && currentTab.title ? currentTab.title : '';
+
+            const icons = ['⭐', '🔍', '🐙', '💬', '🌐', '📚', '🎬', '🎵', '🛒', '💼', '📰', '🎮', '⚙️'];
+            const modalHtml = `
+                <div class="modal-overlay show" id="bookmarkModal">
+                    <div class="modal">
+                        <h2>添加书签</h2>
+                        <div class="form-group">
+                            <label>名称</label>
+                            <input type="text" id="bmName" placeholder="网站名称" value="${escapeHTML(currentTitle)}">
+                        </div>
+                        <div class="form-group">
+                            <label>网址</label>
+                            <input type="text" id="bmUrl" placeholder="https://example.com" value="${escapeHTML(currentUrl)}">
+                        </div>
+                        <div class="form-group">
+                            <label>图标</label>
+                            <div class="icon-picker" id="bmIconPicker">
+                                ${icons.map(icon => `
+                                    <button type="button" onclick="selectBookmarkIcon(this, '${icon}')" class="${icon === '⭐' ? 'selected' : ''}">${icon}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-secondary" onclick="closeBookmarkModal()">取消</button>
+                            <button class="btn-primary" onclick="saveBookmark()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            window.selectedBookmarkIcon = '⭐';
+        }
+
+        function selectBookmarkIcon(btn, icon) {
+            document.querySelectorAll('#bmIconPicker button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            window.selectedBookmarkIcon = icon;
+        }
+
+        function closeBookmarkModal() {
+            document.getElementById('bookmarkModal')?.remove();
+        }
+
+        function saveBookmark() {
+            const name = document.getElementById('bmName').value.trim();
+            const url = document.getElementById('bmUrl').value.trim();
+            const icon = window.selectedBookmarkIcon || '⭐';
+
+            if (!name || !url) {
+                showToast('请填写名称和网址');
+                return;
+            }
+
+            const finalUrl = normalizeUrl(url);
+            const newId = Math.max(0, ...quickLinks.map(l => Number(l.id) || 0)) + 1;
+            quickLinks.push({ id: newId, name, url: finalUrl, icon });
+            saveQuickLinks();
+            renderQuickLinks();
+            closeBookmarkModal();
+            showToast('书签已添加');
+        }
+
+        function showToast(message) {
+            const existing = document.getElementById('toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function getTauriWebviewWindowCtor() {
+            if (window.__TAURI__?.webviewWindow?.WebviewWindow) {
+                return window.__TAURI__.webviewWindow.WebviewWindow;
+            }
+
+            if (window.__TAURI__?.window?.WebviewWindow) {
+                return window.__TAURI__.window.WebviewWindow;
+            }
+
+            if (window.__TAURI__?.WebviewWindow) {
+                return window.__TAURI__.WebviewWindow;
+            }
+
+            try {
+                const mod = await import('@tauri-apps/api/webviewWindow');
+                return mod.WebviewWindow;
+            } catch (error) {
+                console.warn('无法加载 WebviewWindow，将使用当前 Tauri 窗口兜底：', error);
+                return null;
+            }
+        }
+
+        async function openInTauriWebviewWindow(finalUrl) {
+            const WebviewWindow = await getTauriWebviewWindowCtor();
+            if (!WebviewWindow) return false;
+
+            const label = `cc_browser_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const title = getTitleFromUrl(finalUrl);
+
+            try {
+                const webviewWindow = new WebviewWindow(label, {
+                    url: finalUrl,
+                    title,
+                    width: BROWSER_CONFIG.defaultWindowWidth,
+                    height: BROWSER_CONFIG.defaultWindowHeight,
+                    center: true,
+                    resizable: true,
+                    visible: true,
+                    focus: true
+                });
+
+                if (typeof webviewWindow.once === 'function') {
+                    webviewWindow.once('tauri://created', () => {
+                        setStatus('已在 Tauri 应用内窗口打开');
+                        showToast('已在应用内窗口打开');
+                    });
+                    webviewWindow.once('tauri://error', event => {
+                        console.error('Tauri WebviewWindow 创建失败：', event);
+                        openInCurrentTauriWindow(finalUrl);
+                    });
+                } else {
+                    setStatus('已在 Tauri 应用内窗口打开');
+                }
+
+                return true;
+            } catch (error) {
+                console.warn('Tauri WebviewWindow 打开失败，将使用当前 Tauri 窗口兜底：', error);
+                return false;
+            }
+        }
+
+        function openInCurrentTauriWindow(finalUrl) {
+            setCurrentTabMeta(finalUrl);
+            setStatus('正在当前 Tauri 窗口打开...', true);
+            showToast('新窗口权限不可用，正在当前 Tauri 窗口打开');
+            window.location.href = finalUrl;
+            return true;
+        }
+
+        async function openInTauriExternal(finalUrl) {
+            const openers = [
+                {
+                    available: () => typeof window.__TAURI__?.opener?.openUrl === 'function',
+                    run: () => window.__TAURI__.opener.openUrl(finalUrl)
+                },
+                {
+                    available: () => typeof window.__TAURI__?.shell?.open === 'function',
+                    run: () => window.__TAURI__.shell.open(finalUrl)
+                },
+                {
+                    available: () => typeof window.__TAURI_INTERNALS__?.invoke === 'function',
+                    run: () => window.__TAURI_INTERNALS__.invoke('plugin:opener|open_url', { url: finalUrl })
+                },
+                {
+                    available: () => typeof window.__TAURI_INTERNALS__?.invoke === 'function',
+                    run: () => window.__TAURI_INTERNALS__.invoke('plugin:shell|open', { path: finalUrl })
+                },
+                {
+                    available: () => true,
+                    run: async () => {
+                    const mod = await import('@tauri-apps/plugin-opener');
+                    return mod.openUrl ? mod.openUrl(finalUrl) : mod.open?.(finalUrl);
+                    }
+                },
+                {
+                    available: () => true,
+                    run: async () => {
+                    const mod = await import('@tauri-apps/api/shell');
+                    return mod.open?.(finalUrl);
+                    }
+                }
+            ];
+
+            for (const opener of openers) {
+                try {
+                    if (!opener.available()) continue;
+                    const result = opener.run();
+                    if (!result) continue;
+                    if (result && typeof result.then === 'function') await result;
+                    setStatus('已交给系统浏览器打开');
+                    showToast('已交给系统浏览器打开');
+                    return true;
+                } catch (error) {
+                    console.warn('Tauri 外部打开方式不可用：', error);
+                }
+            }
+
+            return false;
+        }
+
+        function openInSystemBrowser(finalUrl) {
+            setStatus('已交给系统浏览器打开');
+            if (nativeWindowOpen) {
+                nativeWindowOpen(finalUrl, '_blank', 'noopener,noreferrer');
+                return;
+            }
+            window.location.href = finalUrl;
+        }
+
+        function setCurrentTabMeta(finalUrl) {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab) {
+                currentTab.url = finalUrl;
+                currentTab.title = getTitleFromUrl(finalUrl);
+            }
+            updateTabUI();
+        }
+
+        function openInIframe(finalUrl, options = {}) {
+            const iframe = document.getElementById(`webview${activeTabId}`);
+            if (!iframe) return;
+
+            setCurrentTabMeta(finalUrl);
+            iframe.src = finalUrl;
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('errorScreen').classList.remove('show');
+            setStatus('加载中...', true);
+            if (!options.silent && isTauriRuntime()) {
+                showToast('Tauri WebviewWindow 不可用，已使用内嵌模式兜底');
+            }
+        }
+
+        async function openSmart(rawUrl, options = {}) {
+            const finalUrl = normalizeUrl(rawUrl);
+            if (!finalUrl) return;
+            const openMode = getBrowserOpenMode(options);
+
+            if (!isTauriRuntime()) {
+                if (openMode === 'internal') openInIframe(finalUrl, { silent: true });
+                else openInSystemBrowser(finalUrl);
+                return;
+            }
+
+            if (BROWSER_CONFIG.externalSchemes.test(finalUrl)) {
+                const openedExternalProtocol = await openInTauriExternal(finalUrl);
+                if (!openedExternalProtocol) openInSystemBrowser(finalUrl);
+                return;
+            }
+
+            if (openMode === 'internal') {
+                openInIframe(finalUrl, { silent: true });
+                return;
+            }
+
+            setStatus('正在使用 Tauri 应用内方案打开...', true);
+
+            if (BROWSER_CONFIG.tauriOpenStrategy === 'webview-window') {
+                const opened = await openInTauriWebviewWindow(finalUrl);
+                if (opened) return;
+            }
+
+            openInCurrentTauriWindow(finalUrl);
+        }
+
+        function openExternal(url) {
+            return openSmart(url);
+        }
+
+        function navigateTo(url) {
+            return openSmart(url, { source: 'address-bar' });
+        }
+
+        function updateTabUI() {
+            const tabBar = document.getElementById('tabBar');
+            if (tabBar) {
+                tabBar.innerHTML = tabs.map(tab => `
+                    <div class="tab ${tab.id === activeTabId ? 'active' : ''}" data-tab="${Number(tab.id)}" onclick="switchToTab(${Number(tab.id)})">
+                        <span class="tab-title">${escapeHTML(tab.title)}</span>
+                        <span class="tab-close" onclick="closeTab(${Number(tab.id)}, event)">×</span>
+                    </div>
+                `).join('') + '<button class="new-tab-btn" onclick="createNewTab()">+</button>';
+            }
+
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab) {
+                const urlInput = document.getElementById('urlInput');
+                if (urlInput) urlInput.value = currentTab.url === 'about:blank' ? '' : currentTab.url;
+
+                document.getElementById('backBtn').disabled = !currentTab.canGoBack;
+                document.getElementById('forwardBtn').disabled = !currentTab.canGoForward;
+
+                if (currentTab.url === 'about:blank') {
+                    document.getElementById('homeScreen').classList.remove('hidden');
+                    document.getElementById('errorScreen').classList.remove('show');
+                } else {
+                    document.getElementById('homeScreen').classList.add('hidden');
+                }
+
+                const securityIcon = document.getElementById('securityIcon');
+                if (securityIcon) securityIcon.textContent = /^https:/i.test(currentTab.url) ? '🔒' : '🔓';
+            }
+
+            const tabCount = document.getElementById('tabCount');
+            if (tabCount) tabCount.textContent = `${tabs.length} 个标签页`;
+
+            updateRuntimeLabel();
+        }
+
+        function switchToTab(tabId) {
+            document.querySelectorAll('.webview-frame').forEach(f => f.classList.remove('active'));
+            const target = document.getElementById(`webview${tabId}`);
+            if (target) target.classList.add('active');
+            activeTabId = tabId;
+            updateTabUI();
+        }
+
+        function createNewTab() {
+            const newId = ++tabCounter;
+            const container = document.getElementById('webviewContainer');
+            const iframe = document.createElement('iframe');
+            iframe.id = `webview${newId}`;
+            iframe.className = 'webview-frame';
+            iframe.src = 'about:blank';
+            iframe.referrerPolicy = 'no-referrer-when-downgrade';
+            container.appendChild(iframe);
+
+            tabs.push({ id: newId, url: 'about:blank', title: '新标签页', canGoBack: false, canGoForward: false });
+            switchToTab(newId);
+        }
+
+        function closeTab(tabId, event) {
+            event?.stopPropagation?.();
+
+            if (tabs.length === 1) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            document.getElementById(`webview${tabId}`)?.remove();
+            tabs = tabs.filter(t => t.id !== tabId);
+
+            if (activeTabId === tabId) {
+                activeTabId = tabs[tabs.length - 1].id;
+                document.getElementById(`webview${activeTabId}`)?.classList.add('active');
+            }
+
+            updateTabUI();
+        }
+
+        function closeBrowserWindow() {
+            try {
+                window.close();
+            } catch {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function handleUrlInput(event) {
+            if (event.key === 'Enter') navigateTo(document.getElementById('urlInput').value);
+        }
+
+        function handleHomeSearch(event) {
+            if (event.key === 'Enter') navigateTo(document.getElementById('homeSearchInput').value);
+        }
+
+        function goBack() {
+            const iframe = document.getElementById(`webview${activeTabId}`);
+            try {
+                iframe?.contentWindow?.history?.back();
+            } catch (error) {
+                showToast('当前页面不允许控制后退');
+            }
+        }
+
+        function goForward() {
+            const iframe = document.getElementById(`webview${activeTabId}`);
+            try {
+                iframe?.contentWindow?.history?.forward();
+            } catch (error) {
+                showToast('当前页面不允许控制前进');
+            }
+        }
+
+        function refreshPage() {
+            const iframe = document.getElementById(`webview${activeTabId}`);
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (isTauriRuntime() && BROWSER_CONFIG.tauriOpenStrategy === 'webview-window' && currentTab?.url && currentTab.url !== 'about:blank') {
+                openSmart(currentTab.url);
+                return;
+            }
+            if (iframe && iframe.src && iframe.src !== 'about:blank') {
+                iframe.src = iframe.src;
+                setStatus('刷新中...', true);
+            }
+        }
+
+        function goHome() {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab) {
+                currentTab.url = 'about:blank';
+                currentTab.title = '新标签页';
+            }
+            const iframe = document.getElementById(`webview${activeTabId}`);
+            if (iframe) iframe.src = 'about:blank';
+            document.getElementById('homeScreen').classList.remove('hidden');
+            document.getElementById('errorScreen').classList.remove('show');
+            document.getElementById('homeSearchInput').value = '';
+            setStatus('就绪');
+            updateTabUI();
+        }
+
+        document.getElementById('webviewContainer').addEventListener('load', function(event) {
+            const iframe = event.target;
+            if (!iframe.classList?.contains('webview-frame') || iframe.id !== `webview${activeTabId}`) return;
+
+            setStatus('加载完成');
+
+            try {
+                const currentTab = tabs.find(t => t.id === activeTabId);
+                if (currentTab && iframe.src !== 'about:blank') {
+                    currentTab.url = iframe.src;
+                    currentTab.title = iframe.contentDocument?.title || getTitleFromUrl(iframe.src);
+                    document.getElementById('urlInput').value = iframe.src;
+                    document.getElementById('securityIcon').textContent = /^https:/i.test(iframe.src) ? '🔒' : '🔓';
+                }
+            } catch {
+                const currentTab = tabs.find(t => t.id === activeTabId);
+                if (currentTab && iframe.src !== 'about:blank') currentTab.title = getTitleFromUrl(iframe.src);
+            }
+
+            setTimeout(() => setStatus('就绪'), 1600);
+            updateTabUI();
+        }, true);
+
+        document.getElementById('webviewContainer').addEventListener('error', function(event) {
+            if (!event.target.classList?.contains('webview-frame')) return;
+            setStatus('加载失败');
+            document.getElementById('errorScreen').classList.add('show');
+            document.getElementById('errorMessage').textContent = '无法加载此页面：' + event.target.src;
+        }, true);
+
+        document.addEventListener('click', function(event) {
+            const anchor = event.target.closest?.('a[href]');
+            if (!anchor) return;
+
+            const href = anchor.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+            event.preventDefault();
+            openSmart(anchor.href || href, { source: 'anchor' });
+        }, true);
+
+        window.open = function(url, target, features) {
+            if (url) {
+                openSmart(url, { source: 'window.open', target, features });
+                return null;
+            }
+            return nativeWindowOpen ? nativeWindowOpen(url, target, features) : null;
+        };
+
+        updateTabUI();
+        loadQuickLinks();
+        updateRuntimeLabel();
+        document.getElementById('browserOpenMode').value = localStorage.getItem(OPEN_MODE_KEY) || 'internal';
+
+        const queryUrlToOpen = new URLSearchParams(window.location.search).get('open');
+        const queryMode = new URLSearchParams(window.location.search).get('mode');
+        const urlToOpen = queryUrlToOpen || sessionStorage.getItem('openInBrowser');
+        const modeToOpen = queryMode || sessionStorage.getItem('openInBrowserMode') || localStorage.getItem(OPEN_MODE_KEY) || 'internal';
+        if (urlToOpen) {
+            sessionStorage.removeItem('openInBrowser');
+            sessionStorage.removeItem('openInBrowserMode');
+            setBrowserOpenMode(modeToOpen);
+            document.getElementById('browserOpenMode').value = modeToOpen === 'window' ? 'window' : 'internal';
+            if (queryUrlToOpen) {
+                window.history.replaceState(null, document.title, 'CC-browser.html');
+            }
+            setTimeout(() => openSmart(urlToOpen, { source: 'sessionStorage.openInBrowser', mode: modeToOpen }), 300);
+        }
+
+        window.openExternal = openExternal;
+        window.navigateTo = navigateTo;
+    </script>
+    <script src="cc-common.js?v=2.1.8"></script>
+</body>
+</html>

@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-image-compressor">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=3.3.2">
+    <style>
+        .compressor-app {
+            max-width: 90%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 3rem;
+        }
+
+        .compressor-header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        .compressor-header .eyebrow {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .compressor-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .compressor-header .subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 1rem;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 1.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-panel {
+            position: sticky;
+            top: 1.5rem;
+        }
+
+        .panel-section {
+            margin-bottom: 1.75rem;
+            padding-bottom: 1.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #667eea;
+            background: rgba(102,126,234,0.08);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-text {
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+
+        .upload-hint {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8125rem;
+        }
+
+        .upload-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .upload-option-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.7);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 0.8125rem;
+        }
+
+        .upload-option-btn:hover {
+            background: rgba(102,126,234,0.15);
+            border-color: #667eea;
+        }
+
+        .slider-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .slider-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .slider-label span:first-child {
+            color: rgba(255,255,255,0.8);
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+
+        .slider-value {
+            background: rgba(102,126,234,0.15);
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #667eea;
+        }
+
+        .slider-input {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+            transition: transform 0.2s;
+        }
+
+        .slider-input::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.75rem;
+        }
+
+        .toggle-option:last-child {
+            margin-bottom: 0;
+        }
+
+        .toggle-option:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .toggle-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .toggle-option label {
+            flex: 1;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.9375rem;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .preset-btn {
+            padding: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 0.8125rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(102,126,234,0.15);
+            border-color: #667eea;
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .primary-btn,
+        .ghost-btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(102,126,234,0.3);
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .ghost-btn {
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .ghost-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .preview-area {
+            min-height: 600px;
+        }
+
+        .preview-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5rem 2rem;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+        }
+
+        .preview-empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .preview-empty p {
+            font-size: 1rem;
+        }
+
+        .file-list-container {
+            display: none;
+        }
+
+        .file-list-container.active {
+            display: block;
+        }
+
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .file-list-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .file-list-stats {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.875rem;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .file-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        .file-item.selected {
+            border-color: #667eea;
+            background: rgba(102,126,234,0.1);
+        }
+
+        .file-item.processing {
+            border-color: rgba(255,193,7,0.5);
+            background: rgba(255,193,7,0.05);
+        }
+
+        .file-item.completed {
+            border-color: rgba(46,213,115,0.5);
+            background: rgba(46,213,115,0.05);
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8125rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .file-status {
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .file-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .file-compare-btn,
+        .file-remove-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .file-compare-btn {
+            background: rgba(102,126,234,0.15);
+            color: #667eea;
+        }
+
+        .file-compare-btn:hover {
+            background: rgba(102,126,234,0.3);
+            transform: scale(1.1);
+        }
+
+        .file-remove-btn {
+            background: rgba(255,107,107,0.15);
+            color: #ff6b6b;
+        }
+
+        .file-remove-btn:hover {
+            background: rgba(255,107,107,0.3);
+            transform: scale(1.1);
+        }
+
+        .progress-bar {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .comparison-view {
+            display: none;
+        }
+
+        .comparison-view.active {
+            display: block;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .image-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .image-card-header {
+            padding: 1rem 1.25rem;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .image-card-title {
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9375rem;
+        }
+
+        .image-card-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-original {
+            background: rgba(102,126,234,0.15);
+            color: #667eea;
+        }
+
+        .badge-compressed {
+            background: rgba(46,213,115,0.15);
+            color: #2ed573;
+        }
+
+        .image-wrapper {
+            position: relative;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+            max-height: 400px;
+        }
+
+        .image-wrapper img,
+        .image-wrapper video {
+            max-width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.75rem;
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-tile {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .stat-tile span {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-tile small {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8125rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: rgba(46,213,115,0.4);
+        }
+
+        .toast.error {
+            border-color: rgba(255,107,107,0.4);
+        }
+
+        .fileInput,
+        .folder-input {
+            display: none;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            padding: 0.25rem;
+            border-radius: 10px;
+        }
+
+        .view-toggle-btn {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn:hover {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .view-toggle-btn.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .select-all-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .select-all-toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 1200px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .compressor-app {
+                padding: 1.5rem 1rem 2rem;
+            }
+
+            .compressor-header h1 {
+                font-size: 1.75rem;
+            }
+
+            .compressor-header .subtitle {
+                font-size: 0.875rem;
+            }
+
+            .control-panel {
+                padding: 1.25rem;
+            }
+
+            .preview-area {
+                padding: 1.25rem;
+                min-height: 500px;
+            }
+
+            .file-list-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .select-all-toggle {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .file-item {
+                padding: 0.875rem;
+                flex-wrap: wrap;
+            }
+
+            .file-icon {
+                font-size: 1.5rem;
+            }
+
+            .file-compare-btn,
+            .file-remove-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 0.9rem;
+            }
+
+            .image-wrapper {
+                min-height: 200px;
+                max-height: 280px;
+            }
+
+            .image-wrapper img,
+            .image-wrapper video {
+                max-height: 250px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .batch-actions {
+                flex-direction: column;
+            }
+            
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .compressor-app {
+                padding: 1rem 0.75rem 1.5rem;
+            }
+
+            .compressor-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .upload-options {
+                flex-direction: column;
+            }
+
+            .preset-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .file-meta {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .file-status {
+                width: 100%;
+                text-align: left;
+                margin-top: 0.5rem;
+            }
+
+            .file-item {
+                gap: 0.75rem;
+            }
+            
+            .view-toggle {
+                flex-direction: column;
+            }
+            
+            .view-toggle-btn {
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="compressor-app">
+        <header class="compressor-header">
+            <p class="eyebrow">Image Compressor</p>
+            <h1>图片压缩工具</h1>
+            <p class="subtitle">智能压缩图片，保留EXIF信息，支持批量处理</p>
+        </header>
+
+        <div class="workspace">
+            <aside class="control-panel panel">
+                <div class="panel-section">
+                    <div class="section-title">上传文件</div>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📤</div>
+                        <div class="upload-text">点击或拖拽上传</div>
+                        <div class="upload-hint">支持图片、文件夹</div>
+                    </div>
+                    <input type="file" id="fileInput" class="fileInput" accept="image/*" multiple>
+                    <input type="file" id="folderInput" class="folder-input" webkitdirectory directory multiple>
+                    <div class="upload-options">
+                        <button class="upload-option-btn" onclick="document.getElementById('fileInput').click()">📁 选择文件</button>
+                        <button class="upload-option-btn" onclick="document.getElementById('folderInput').click()">📂 选择文件夹</button>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="controlsSection" style="display: none;">
+                    <div class="section-title">快速预设</div>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-preset="high">高品质</button>
+                        <button class="preset-btn active" data-preset="balanced">均衡</button>
+                        <button class="preset-btn" data-preset="small">小体积</button>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="sliderSection" style="display: none;">
+                    <div class="section-title">压缩设置</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>压缩质量</span>
+                            <span class="slider-value" id="qualityValue">80%</span>
+                        </div>
+                        <input type="range" class="slider-input" id="qualitySlider" min="10" max="100" value="80">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>尺寸缩放</span>
+                            <span class="slider-value" id="scaleValue">100%</span>
+                        </div>
+                        <input type="range" class="slider-input" id="scaleSlider" min="10" max="100" value="100">
+                    </div>
+                </div>
+
+                <div class="panel-section" id="optionsSection" style="display: none;">
+                    <div class="section-title">选项</div>
+                    <div class="toggle-option">
+                        <input type="checkbox" id="preserveExif" checked>
+                        <label for="preserveExif">保留 EXIF 信息</label>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.4); font-size: 0.8125rem; margin-top: 0.75rem; padding-left: 0.25rem; line-height: 1.5;">
+                        保留拍摄日期、相机型号等元数据，手机相册可按时间排序
+                    </p>
+                    <p style="color: rgba(255,200,100,0.6); font-size: 0.75rem; margin-top: 0.5rem; padding-left: 0.25rem;">
+                        💡 视频压缩功能正在开发中，敬请期待！
+                    </p>
+                </div>
+
+                <div class="panel-section" id="actionSection" style="display: none;">
+                    <div class="action-buttons">
+                        <button class="primary-btn" id="compressAllBtn" disabled>🗜️ 压缩全部</button>
+                        <button class="primary-btn" id="downloadAllBtn" disabled>📦 下载全部</button>
+                        <button class="ghost-btn" id="resetBtn">🔄 清空列表</button>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="preview-area panel">
+                <div class="preview-empty" id="previewEmpty">
+                    <div class="preview-empty-icon">🖼️</div>
+                    <p>上传文件后即可开始压缩</p>
+                </div>
+
+                <div class="file-list-container" id="fileListView">
+                    <div class="file-list-header">
+                        <div>
+                            <div class="file-list-title">文件列表</div>
+                            <div class="file-list-stats" id="fileListStats">0 个文件</div>
+                        </div>
+                        <label class="select-all-toggle">
+                            <input type="checkbox" id="selectAllCheckbox">
+                            全选
+                        </label>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn active" data-view="list" onclick="switchView('list')">📋 列表视图</button>
+                        <button class="view-toggle-btn" data-view="compare" onclick="switchView('compare')">👀 对比视图</button>
+                    </div>
+                    <div class="file-list" id="fileList"></div>
+                    <div class="batch-actions" id="batchActions" style="display: none;">
+                        <button class="primary-btn" id="compressSelectedBtn" disabled>压缩选中</button>
+                        <button class="ghost-btn" id="removeSelectedBtn">删除选中</button>
+                    </div>
+                </div>
+
+                <div class="comparison-view" id="comparisonView">
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn" data-view="list" onclick="switchView('list')">📋 列表视图</button>
+                        <button class="view-toggle-btn active" data-view="compare" onclick="switchView('compare')">👀 对比视图</button>
+                    </div>
+                    <div class="comparison-container">
+                        <div class="image-card">
+                            <div class="image-card-header">
+                                <span class="image-card-title">原图</span>
+                                <span class="image-card-badge badge-original" id="originalSize">--</span>
+                            </div>
+                            <div class="image-wrapper" id="originalPreviewWrapper">
+                                <div style="color: rgba(255,255,255,0.4);">在列表中选择文件查看</div>
+                            </div>
+                        </div>
+                        <div class="image-card">
+                            <div class="image-card-header">
+                                <span class="image-card-title">压缩后</span>
+                                <span class="image-card-badge badge-compressed" id="compressedSize">--</span>
+                            </div>
+                            <div class="image-wrapper" id="compressedPreviewWrapper">
+                                <div style="color: rgba(255,255,255,0.4);">压缩后显示</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-tile">
+                            <span id="statOriginalSize">--</span>
+                            <small>原始大小</small>
+                        </div>
+                        <div class="stat-tile">
+                            <span id="statCompressedSize">--</span>
+                            <small>压缩后大小</small>
+                        </div>
+                        <div class="stat-tile">
+                            <span id="statSavings">--</span>
+                            <small>节省空间</small>
+                        </div>
+                        <div class="stat-tile">
+                            <span id="statDimensions">--</span>
+                            <small>尺寸</small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let files = [];
+        let selectedFileIndex = null;
+        let currentView = 'list';
+
+        const els = {};
+
+        function init() {
+            cacheElements();
+            bindEvents();
+        }
+
+        function cacheElements() {
+            [
+                'uploadArea', 'fileInput', 'folderInput',
+                'controlsSection', 'sliderSection', 'optionsSection', 'actionSection',
+                'qualitySlider', 'qualityValue',
+                'scaleSlider', 'scaleValue',
+                'preserveExif', 'processImages', 'processVideos',
+                'compressAllBtn', 'downloadAllBtn', 'resetBtn',
+                'previewEmpty', 'fileListView', 'comparisonView',
+                'fileList', 'fileListStats', 'selectAllCheckbox',
+                'batchActions', 'compressSelectedBtn', 'removeSelectedBtn',
+                'originalSize', 'compressedSize',
+                'statOriginalSize', 'statCompressedSize', 'statSavings', 'statDimensions',
+                'originalPreviewWrapper', 'compressedPreviewWrapper',
+                'toast'
+            ].forEach(id => els[id] = document.getElementById(id));
+        }
+
+        function bindEvents() {
+            els.uploadArea.addEventListener('click', () => els.fileInput.click());
+            els.fileInput.addEventListener('change', handleFileSelect);
+            els.folderInput.addEventListener('change', handleFolderSelect);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                els.uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                els.uploadArea.addEventListener(eventName, () => els.uploadArea.classList.add('drag-over'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                els.uploadArea.addEventListener(eventName, () => els.uploadArea.classList.remove('drag-over'), false);
+            });
+            
+            els.uploadArea.addEventListener('drop', (e) => {
+                const droppedFiles = Array.from(e.dataTransfer.files);
+                addFiles(droppedFiles);
+            }, false);
+
+            els.qualitySlider.addEventListener('input', () => {
+                els.qualityValue.textContent = `${els.qualitySlider.value}%`;
+                updatePreviewOnParamChange();
+            });
+
+            els.scaleSlider.addEventListener('input', () => {
+                els.scaleValue.textContent = `${els.scaleSlider.value}%`;
+                updatePreviewOnParamChange();
+            });
+
+            els.preserveExif.addEventListener('change', () => {
+                updatePreviewOnParamChange();
+            });
+
+            els.compressAllBtn.addEventListener('click', compressAllFiles);
+            els.downloadAllBtn.addEventListener('click', downloadAllFiles);
+            els.resetBtn.addEventListener('click', resetCompressor);
+            els.compressSelectedBtn.addEventListener('click', compressSelectedFiles);
+            els.removeSelectedBtn.addEventListener('click', removeSelectedFiles);
+            els.selectAllCheckbox.addEventListener('change', toggleSelectAll);
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyPreset(btn.dataset.preset);
+                    updatePreviewOnParamChange();
+                });
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleFileSelect(event) {
+            const selectedFiles = Array.from(event.target.files);
+            addFiles(selectedFiles);
+            event.target.value = '';
+        }
+
+        function handleFolderSelect(event) {
+            const selectedFiles = Array.from(event.target.files);
+            addFiles(selectedFiles);
+            event.target.value = '';
+        }
+
+        function addFiles(newFiles) {
+            const wasEmpty = files.length === 0;
+            let videoCount = 0;
+
+            newFiles.forEach(file => {
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+                
+                if (isVideo) {
+                    videoCount++;
+                    return; // 跳过视频文件
+                }
+                
+                if (isImage) {
+                    const existingIndex = files.findIndex(f => f.file.name === file.name && f.file.size === file.size);
+                    if (existingIndex === -1) {
+                        files.push({
+                            file: file,
+                            selected: false,
+                            status: 'pending',
+                            progress: 0,
+                            compressedBlob: null,
+                            exifData: null,
+                            originalPreviewUrl: URL.createObjectURL(file)
+                        });
+                    }
+                }
+            });
+
+            // 提示用户视频文件被跳过
+            if (videoCount > 0) {
+                showToast(`已跳过 ${videoCount} 个视频文件，视频压缩功能开发中`, 'default');
+            }
+
+            if (files.length > 0) {
+                // 如果是第一次添加文件，默认选中第一个
+                if (wasEmpty && files.length > 0) {
+                    selectedFileIndex = 0;
+                    files[0].selected = true;
+                }
+                
+                showFileList();
+                updateFileList();
+            }
+        }
+
+        function showFileList() {
+            els.uploadArea.style.display = 'none';
+            els.controlsSection.style.display = 'block';
+            els.sliderSection.style.display = 'block';
+            els.optionsSection.style.display = 'block';
+            els.actionSection.style.display = 'block';
+            els.previewEmpty.style.display = 'none';
+            els.fileListView.classList.add('active');
+            els.batchActions.style.display = 'flex';
+            
+            updateButtonStates();
+            
+            // 如果有选中文件，并且在对比视图，立即显示预览
+            if (selectedFileIndex !== null && currentView === 'compare') {
+                showFileComparison(selectedFileIndex);
+            }
+        }
+
+        function updateButtonStates() {
+            const hasFiles = files.length > 0;
+            const hasSelectedFiles = files.some(f => f.selected);
+            const allCompressed = files.every(f => f.compressedBlob);
+            
+            els.compressAllBtn.disabled = !hasFiles;
+            els.compressSelectedBtn.disabled = !hasSelectedFiles;
+            els.downloadAllBtn.disabled = !allCompressed;
+        }
+
+        function updateFileList() {
+            els.fileList.innerHTML = '';
+            const selectedCount = files.filter(f => f.selected).length;
+            
+            els.fileListStats.textContent = `${files.length} 个文件，已选 ${selectedCount} 个`;
+            els.selectAllCheckbox.checked = files.length > 0 && selectedCount === files.length;
+            updateButtonStates();
+
+            files.forEach((fileData, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${fileData.selected ? 'selected' : ''} ${fileData.status}`;
+                fileItem.onclick = (e) => {
+                    if (!e.target.closest('.file-remove-btn')) {
+                        selectFile(index);
+                    }
+                };
+
+                let icon = '🖼️';
+
+                let statusText = '待处理';
+                if (fileData.status === 'processing') statusText = '处理中...';
+                if (fileData.status === 'completed') statusText = '已完成';
+                if (fileData.status === 'error') statusText = '失败';
+
+                fileItem.innerHTML = `
+                    <div class="file-icon">${icon}</div>
+                    <div class="file-info">
+                        <div class="file-name">${escapeHtml(fileData.file.name)}</div>
+                        <div class="file-meta">
+                            <span>${formatFileSize(fileData.file.size)}</span>
+                            <span>${fileData.file.type || '未知类型'}</span>
+                        </div>
+                        ${fileData.status === 'processing' ? '<div class="progress-bar"><div class="progress-fill" style="width: ' + fileData.progress + '%"></div></div>' : ''}
+                    </div>
+                    <div class="file-status">
+                        <div style="color: ${fileData.status === 'completed' ? '#2ed573' : fileData.status === 'error' ? '#ff6b6b' : 'rgba(255,255,255,0.5)'};">${statusText}</div>
+                        ${fileData.compressedBlob ? `<div style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">${formatFileSize(fileData.compressedBlob.size)}</div>` : ''}
+                    </div>
+                    <div class="file-action-buttons">
+                        <button class="file-compare-btn" onclick="compareFile(${index})" title="预览对比">👁</button>
+                        <button class="file-remove-btn" onclick="removeFile(${index})" title="删除">×</button>
+                    </div>
+                `;
+
+                els.fileList.appendChild(fileItem);
+            });
+        }
+
+        function selectFile(index) {
+            // 先取消所有选中，然后只选中当前项
+            files.forEach((f, i) => {
+                f.selected = (i === index);
+            });
+            selectedFileIndex = index;
+            updateFileList();
+            
+            // 无论在哪个视图，都更新预览（如果是对比视图则显示）
+            showFileComparison(index);
+            // 如果是在列表视图，保存当前选中以便切换视图时显示
+        }
+
+        async function compareFile(index) {
+            // 选中当前文件
+            files.forEach((f, i) => {
+                f.selected = (i === index);
+            });
+            selectedFileIndex = index;
+            updateFileList();
+            
+            const fileData = files[index];
+            
+            try {
+                // 临时压缩用于预览（不保存到compressedBlob）
+                const quality = els.qualitySlider.value / 100;
+                const scale = els.scaleSlider.value / 100;
+                const preserveExif = els.preserveExif.checked;
+                
+                const img = await loadImage(fileData.originalPreviewUrl);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                let tempBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                
+                if (preserveExif) {
+                    const exifData = await readExifData(fileData.file);
+                    if (exifData && fileData.file.type === 'image/jpeg') {
+                        tempBlob = await insertExifData(tempBlob, exifData);
+                    }
+                }
+                
+                // 创建临时预览数据
+                const tempUrl = URL.createObjectURL(tempBlob);
+                
+                // 切换到对比视图
+                currentView = 'compare';
+                document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.view === 'compare');
+                });
+                els.fileListView.classList.remove('active');
+                els.comparisonView.classList.add('active');
+                
+                // 显示预览
+                showTempComparison(index, tempUrl, tempBlob.size);
+                
+            } catch (error) {
+                console.error('预览压缩失败:', error);
+                showToast('预览生成失败', 'error');
+            }
+        }
+
+        function showTempComparison(index, compressedUrl, compressedSize) {
+            const fileData = files[index];
+            
+            els.originalSize.textContent = formatFileSize(fileData.file.size);
+            els.statOriginalSize.textContent = formatFileSize(fileData.file.size);
+            
+            let originalHtml = `<img src="${fileData.originalPreviewUrl}" alt="原图预览">`;
+            els.originalPreviewWrapper.innerHTML = originalHtml;
+            
+            // 显示临时压缩的预览
+            let compressedHtml = `<img src="${compressedUrl}" alt="压缩后预览">`;
+            els.compressedPreviewWrapper.innerHTML = compressedHtml;
+            els.compressedSize.textContent = formatFileSize(compressedSize);
+            els.statCompressedSize.textContent = formatFileSize(compressedSize);
+            
+            const savings = ((1 - compressedSize / fileData.file.size) * 100).toFixed(1);
+            els.statSavings.textContent = `-${savings}%`;
+            els.statDimensions.textContent = '图片';
+        }
+
+        let updatePreviewTimeout = null;
+        async function updatePreviewOnParamChange() {
+            // 只在对比视图且有选中文件时更新
+            if (currentView !== 'compare' || selectedFileIndex === null || !files[selectedFileIndex]) {
+                return;
+            }
+            
+            const fileData = files[selectedFileIndex];
+            
+            // 防抖处理
+            if (updatePreviewTimeout) {
+                clearTimeout(updatePreviewTimeout);
+            }
+            
+            updatePreviewTimeout = setTimeout(async () => {
+                try {
+                    // 使用当前参数重新进行临时压缩
+                    const quality = els.qualitySlider.value / 100;
+                    const scale = els.scaleSlider.value / 100;
+                    const preserveExif = els.preserveExif.checked;
+                    
+                    const img = await loadImage(fileData.originalPreviewUrl);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    let tempBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                    
+                    if (preserveExif) {
+                        const exifData = await readExifData(fileData.file);
+                        if (exifData && fileData.file.type === 'image/jpeg') {
+                            tempBlob = await insertExifData(tempBlob, exifData);
+                        }
+                    }
+                    
+                    // 更新预览
+                    const tempUrl = URL.createObjectURL(tempBlob);
+                    showTempComparison(selectedFileIndex, tempUrl, tempBlob.size);
+                    
+                } catch (error) {
+                    console.error('实时预览更新失败:', error);
+                }
+            }, 150); // 150ms 防抖
+        }
+
+        function showFileComparison(index) {
+            const fileData = files[index];
+
+            els.originalSize.textContent = formatFileSize(fileData.file.size);
+            els.statOriginalSize.textContent = formatFileSize(fileData.file.size);
+
+            let originalHtml = `<img src="${fileData.originalPreviewUrl}" alt="原图预览">`;
+            els.originalPreviewWrapper.innerHTML = originalHtml;
+
+            if (fileData.compressedBlob) {
+                const compressedUrl = URL.createObjectURL(fileData.compressedBlob);
+                let compressedHtml = `<img src="${compressedUrl}" alt="压缩后预览">`;
+                els.compressedPreviewWrapper.innerHTML = compressedHtml;
+                els.compressedSize.textContent = formatFileSize(fileData.compressedBlob.size);
+                els.statCompressedSize.textContent = formatFileSize(fileData.compressedBlob.size);
+                
+                const savings = ((1 - fileData.compressedBlob.size / fileData.file.size) * 100).toFixed(1);
+                els.statSavings.textContent = `-${savings}%`;
+            } else {
+                els.compressedPreviewWrapper.innerHTML = '<div style="color: rgba(255,255,255,0.4);">压缩后显示</div>';
+                els.compressedSize.textContent = '--';
+                els.statCompressedSize.textContent = '--';
+                els.statSavings.textContent = '--';
+            }
+
+            els.statDimensions.textContent = '图片';
+        }
+
+        function toggleSelectAll() {
+            const selectAll = els.selectAllCheckbox.checked;
+            files.forEach(f => f.selected = selectAll);
+            updateFileList();
+        }
+
+        function removeFile(index) {
+            files.splice(index, 1);
+            if (files.length === 0) {
+                resetCompressor();
+            } else {
+                // 处理选中状态
+                if (selectedFileIndex === index) {
+                    // 如果删除的是当前选中文件，选中前一个或第一个
+                    selectedFileIndex = Math.max(0, index - 1);
+                    files[selectedFileIndex].selected = true;
+                    // 如果在对比视图，更新预览
+                    if (currentView === 'compare') {
+                        showFileComparison(selectedFileIndex);
+                    }
+                } else if (selectedFileIndex > index) {
+                    // 如果选中的文件在删除文件之后，索引减一
+                    selectedFileIndex--;
+                }
+                updateFileList();
+            }
+        }
+
+        function removeSelectedFiles() {
+            files = files.filter(f => !f.selected);
+            if (files.length === 0) {
+                resetCompressor();
+            } else {
+                // 选中第一个文件
+                selectedFileIndex = 0;
+                files[0].selected = true;
+                // 如果在对比视图，更新预览
+                if (currentView === 'compare') {
+                    showFileComparison(0);
+                }
+                updateFileList();
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+            
+            if (view === 'list') {
+                els.fileListView.classList.add('active');
+                els.comparisonView.classList.remove('active');
+            } else {
+                els.fileListView.classList.remove('active');
+                els.comparisonView.classList.add('active');
+                // 切换到对比视图时，如果有选中文件，显示预览
+                if (selectedFileIndex !== null && files[selectedFileIndex]) {
+                    showFileComparison(selectedFileIndex);
+                } else if (files.length > 0) {
+                    // 如果没有选中文件，默认显示第一个文件
+                    showFileComparison(0);
+                }
+            }
+        }
+
+        function applyPreset(preset) {
+            switch (preset) {
+                case 'high':
+                    els.qualitySlider.value = 92;
+                    els.scaleSlider.value = 100;
+                    break;
+                case 'balanced':
+                    els.qualitySlider.value = 80;
+                    els.scaleSlider.value = 100;
+                    break;
+                case 'small':
+                    els.qualitySlider.value = 60;
+                    els.scaleSlider.value = 80;
+                    break;
+            }
+            els.qualityValue.textContent = `${els.qualitySlider.value}%`;
+            els.scaleValue.textContent = `${els.scaleSlider.value}%`;
+        }
+
+        async function compressAllFiles() {
+            for (let i = 0; i < files.length; i++) {
+                await compressFile(i);
+            }
+            showToast('全部压缩完成！', 'success');
+            updateButtonStates();
+        }
+
+        async function compressSelectedFiles() {
+            const selectedFiles = files.filter(f => f.selected);
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].selected) {
+                    await compressFile(i);
+                }
+            }
+            showToast('选中文件压缩完成！', 'success');
+            updateButtonStates();
+        }
+
+        async function compressFile(index) {
+            const fileData = files[index];
+
+            fileData.status = 'processing';
+            fileData.progress = 0;
+            updateFileList();
+
+            try {
+                await compressImageFile(fileData);
+
+                fileData.status = 'completed';
+                fileData.progress = 100;
+                
+                // 压缩完成后，如果当前文件是选中的，更新预览
+                if (selectedFileIndex === index) {
+                    showFileComparison(index);
+                }
+                
+                updateButtonStates();
+            } catch (error) {
+                console.error('压缩失败:', error);
+                fileData.status = 'error';
+            }
+
+            updateFileList();
+        }
+
+        async function compressImageFile(fileData) {
+            const quality = els.qualitySlider.value / 100;
+            const scale = els.scaleSlider.value / 100;
+            const preserveExif = els.preserveExif.checked;
+
+            const img = await loadImage(fileData.originalPreviewUrl);
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+            
+            if (preserveExif) {
+                const exifData = await readExifData(fileData.file);
+                if (exifData && fileData.file.type === 'image/jpeg') {
+                    blob = await insertExifData(blob, exifData);
+                }
+            }
+
+            fileData.compressedBlob = blob;
+        }
+
+        async function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+
+        async function readExifData(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const dataView = new DataView(arrayBuffer);
+                
+                if (dataView.getUint16(0, false) === 0xFFD8) {
+                    let offset = 2;
+                    while (offset < dataView.byteLength - 1) {
+                        const marker = dataView.getUint16(offset, false);
+                        const length = dataView.getUint16(offset + 2, false);
+                        
+                        if (marker === 0xFFE1) {
+                            const exifDataBuffer = arrayBuffer.slice(offset, offset + 2 + length);
+                            return new Uint8Array(exifDataBuffer);
+                        }
+                        offset += 2 + length;
+                    }
+                }
+            } catch (e) {
+                console.log('读取EXIF失败');
+            }
+            return null;
+        }
+
+        async function insertExifData(compressedBlob, exifData) {
+            const arrayBuffer = await compressedBlob.arrayBuffer();
+            const dataView = new DataView(arrayBuffer);
+            const jpegData = new Uint8Array(arrayBuffer);
+
+            if (dataView.getUint16(0, false) !== 0xFFD8) {
+                return compressedBlob;
+            }
+
+            let insertPos = 2;
+            while (insertPos < jpegData.length - 1) {
+                const marker = dataView.getUint16(insertPos, false);
+                if ((marker & 0xFF00) !== 0xFF00) break;
+                const segmentLength = dataView.getUint16(insertPos + 2, false);
+                if (marker === 0xFFE0 || marker === 0xFFE1) {
+                    insertPos += 2 + segmentLength;
+                } else {
+                    break;
+                }
+            }
+
+            const result = new Uint8Array(jpegData.length + exifData.length);
+            result.set(jpegData.slice(0, insertPos), 0);
+            result.set(exifData, insertPos);
+            result.set(jpegData.slice(insertPos), insertPos + exifData.length);
+
+            return new Blob([result], { type: 'image/jpeg' });
+        }
+
+        function downloadAllFiles() {
+            const completedFiles = files.filter(f => f.compressedBlob);
+            completedFiles.forEach(downloadFile);
+        }
+
+        function downloadFile(fileData) {
+            if (!fileData.compressedBlob) return;
+
+            const originalName = fileData.file.name;
+            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+            const ext = originalName.substring(originalName.lastIndexOf('.')) || '.jpg';
+            const newName = `${nameWithoutExt}_compressed${ext}`;
+
+            const url = URL.createObjectURL(fileData.compressedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = newName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function resetCompressor() {
+            files = [];
+            selectedFileIndex = null;
+
+            els.fileInput.value = '';
+            els.folderInput.value = '';
+            els.uploadArea.style.display = 'block';
+            els.controlsSection.style.display = 'none';
+            els.sliderSection.style.display = 'none';
+            els.optionsSection.style.display = 'none';
+            els.actionSection.style.display = 'none';
+            els.previewEmpty.style.display = 'flex';
+            els.fileListView.classList.remove('active');
+            els.comparisonView.classList.remove('active');
+            els.batchActions.style.display = 'none';
+            els.compressAllBtn.disabled = true;
+            els.downloadAllBtn.disabled = true;
+            
+            els.qualitySlider.value = 80;
+            els.scaleSlider.value = 100;
+            els.qualityValue.textContent = '80%';
+            els.scaleValue.textContent = '100%';
+            
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('[data-preset="balanced"]').classList.add('active');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'default') {
+            els.toast.textContent = message;
+            els.toast.className = 'toast show';
+            if (type !== 'default') {
+                els.toast.classList.add(type);
+            }
+
+            setTimeout(() => {
+                els.toast.classList.remove('show');
+            }, 3000);
+        }
+
+        init();
+    </script>
+    <script src="cc-common.js?v=3.3.2"></script>
+</body>
+</html>

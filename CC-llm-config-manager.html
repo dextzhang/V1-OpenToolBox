@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-llm-config-manager">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大模型配置管理</title>
+        <link rel="stylesheet" href="cc-styles.css?v=2.2.0">
+</head>
+<body>
+    <div id="bg-layer"></div>
+    <div class="header-bar">
+        <div class="header-actions">
+            <button class="help-btn" onclick="goHome()" title="返回首页">🏠</button>
+            <button class="help-btn info-help-btn" onclick="toggleHelp()" title="使用说明" aria-label="使用说明">?</button>
+        </div>
+        <h1>大模型配置</h1>
+        <div class="header-actions">
+            <button class="bg-refresh" onclick="copyClaudePath()" title="复制 Claude 路径" aria-label="复制 Claude 路径">📋</button>
+            <button class="bg-refresh" onclick="openClaudeFolder()">📁</button>
+            <button class="bg-refresh" onclick="changeBackground()">⟳</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="left-panel">
+            <div class="card">
+                <div id="add-tab">
+                    <div class="form-group">
+                        <label>配置名称</label>
+                        <input type="text" id="configName" placeholder="例如：OpenAI">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>API 地址</label>
+                            <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>API 密钥</label>
+                            <input type="password" id="apiKey" placeholder="sk-xxx">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>模型列表</label>
+                        <div id="modelInputs">
+                            <div class="model-input-row">
+                                <input type="text" class="model-input" placeholder="gpt-4">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addModelInput()" style="margin-top: 6px;">+ 添加模型</button>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="addConfig()">添加</button>
+                        <button class="btn btn-secondary" onclick="clearForm()">清空</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 14px; font-weight: 600;">已添加 (<span id="configCount">0</span>)</h3>
+                </div>
+                <div id="modelList" class="model-list">
+                    <div class="empty-state">暂无配置</div>
+                </div>
+                <div class="storage-info">LocalStorage 自动保存</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h3>编辑配置</h3>
+            <input type="hidden" id="editIndex">
+            <div class="form-group"><label>名称</label><input type="text" id="editName"></div>
+            <div class="form-group"><label>API</label><input type="text" id="editUrl"></div>
+            <div class="form-group"><label>密钥</label><input type="password" id="editKey"></div>
+            <div class="form-group"><label>模型(逗号分隔)</label><input type="text" id="editModel"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal">
+            <h3>JSON 预览</h3>
+            <div class="json-preview" id="previewContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="copyPreview()">复制</button>
+                <button class="btn btn-primary" onclick="closePreview()">关闭</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="memoModal">
+        <div class="modal memo-modal">
+            <h3>配置备忘录</h3>
+            <input type="hidden" id="memoConfigIndex">
+            <textarea id="memoText" class="memo-editor" placeholder="记录这个配置的使用情况、模型表现、注意事项..."></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeMemoModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveMemoModal()">保存</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="help-modal" id="helpModal" onclick="if(event.target === this) toggleHelp()">
+        <div class="help-content" style="position: relative;">
+            <button class="help-close" onclick="toggleHelp()">×</button>
+            <h3>ClaudeCode 使用方法</h3>
+            <p>1. 添加配置并导出JSON文件</p>
+            <p>2. Windows路径: <code>%USERPROFILE%\.claude\settings.json</code></p>
+            <p>3. Mac/Linux路径: <code>~/.claude/settings.json</code></p>
+            <p>4. 配置文件格式:</p>
+            <p><code>{"env": {"ANTHROPIC_BASE_URL": "API地址", "ANTHROPIC_AUTH_TOKEN": "密钥"}}</code></p>
+            <p>5. 或使用 modelOverrides 指定模型:</p>
+            <p><code>{"modelOverrides": {"claude-sonnet-4-6": "自定义模型ID"}}</code></p>
+            <p>6. 重启ClaudeCode使配置生效</p>
+        </div>
+    </div>
+    <script>
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+        let configs = [];
+        const bgApis = [
+            'https://picsum.photos/1920/1080',
+            'https://picsum.photos/1920/1080',
+            'https://image.pollinations.ai/prompt/nature-landscape',
+            'https://image.pollinations.ai/prompt/sky-clouds',
+            'https://image.pollinations.ai/prompt/mountains-sunset',
+            'https://image.pollinations.ai/prompt/ocean-waves'
+        ];
+        function changeBackground() {
+            const randomApi = bgApis[Math.floor(Math.random() * bgApis.length)];
+            const timestamp = new Date().getTime();
+            document.getElementById('bg-layer').style.backgroundImage = `url('${randomApi}?t=${timestamp}')`;
+        }
+        function openClaudeFolder() {
+            const path = 'C:\\Users\\Administrator\\.claude';
+            const batContent = '@echo off\r\nstart "" "' + path + '"';
+            const blob = new Blob([batContent], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'open-claude-folder.bat';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('已下载批处理文件，双击运行即可打开文件夹');
+        }
+        async function copyClaudePath() {
+            const path = 'C:\\Users\\Administrator\\.claude';
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(path);
+                } else {
+                    const input = document.createElement('input');
+                    input.value = path;
+                    input.style.position = 'fixed';
+                    input.style.left = '-9999px';
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    input.remove();
+                }
+                showToast('已复制 Claude 路径');
+            } catch (err) {
+                showToast('无法复制，请手动复制: ' + path);
+            }
+        }
+        function toggleHelp() { document.getElementById('helpModal').classList.toggle('active'); }
+        function init() {
+            const saved = localStorage.getItem('llm_configs');
+            if (saved) configs = JSON.parse(saved);
+            renderList();
+            changeBackground();
+        }
+        function saveToStorage() {
+            localStorage.setItem('llm_configs', JSON.stringify(configs));
+        }
+        function addModelInput() {
+            const container = document.getElementById('modelInputs');
+            const div = document.createElement('div');
+            div.className = 'model-input-row';
+            div.innerHTML = `<input type="text" class="model-input" placeholder="gpt-4"><button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">×</button>`;
+            container.appendChild(div);
+        }
+        function addConfig() {
+            const name = document.getElementById('configName').value.trim();
+            const url = document.getElementById('apiUrl').value.trim();
+            const key = document.getElementById('apiKey').value.trim();
+            const modelInputs = document.querySelectorAll('.model-input');
+            const models = [];
+            modelInputs.forEach(input => { if(input.value.trim()) models.push(input.value.trim()); });
+            if (!name || !url || !key || models.length === 0) { showToast('请填写所有字段'); return; }
+            configs.push({ name, url, key, models, rating: 0, memo: '' });
+            saveToStorage();
+            renderList(configs.length - 1);
+            clearForm();
+            showToast('添加成功');
+        }
+        function clearForm() {
+            document.getElementById('configName').value = '';
+            document.getElementById('apiUrl').value = '';
+            document.getElementById('apiKey').value = '';
+            document.getElementById('modelInputs').innerHTML = '<div class="model-input-row"><input type="text" class="model-input" placeholder="gpt-4"></div>';
+        }
+        function renderList(newIndex = -1) {
+            const list = document.getElementById('modelList');
+            document.getElementById('configCount').textContent = configs.length;
+            if (configs.length === 0) { list.innerHTML = '<div class="empty-state">暂无配置</div>'; return; }
+            list.innerHTML = configs.map((c, i) => `
+                <div class="model-item${i === newIndex ? ' new-item' : ''}" draggable="true" data-config-index="${i}" ondragstart="startConfigDrag(${i}, event)" ondragover="event.preventDefault()" ondrop="dropConfig(${i}, event)" ondragend="endConfigDrag(event)">
+                    <button type="button" class="model-drag-handle" title="拖动排序" aria-label="拖动排序">⋮⋮</button>
+                    <div class="model-info">
+                        <div class="model-name">${escapeHtml(c.name)}</div>
+                        <div class="model-meta-row">
+                            <span title="API 地址">${escapeHtml(c.url)}</span>
+                            <span title="密钥">${maskKey(c.key)}</span>
+                        </div>
+                        <div class="model-tags">${(Array.isArray(c.models) ? c.models : [c.models]).map(m => `<span class="model-tag" style="cursor: pointer;" onclick="testModelConnection(${i}, '${escapeHtml(m)}')" title="点击测试">${escapeHtml(m)}</span>`).join('')}</div>
+                    </div>
+                    <div class="model-side-note">
+                        ${renderRating(i, c.rating || 0)}
+                        <button type="button" class="memo-trigger${c.memo ? ' has-memo' : ''}" onclick="openMemoModal(${i})">点击记录</button>
+                    </div>
+                    <div class="model-actions">
+                        <button class="btn btn-success btn-sm" onclick="testConnection(${i})">测试</button>
+                        <button class="btn btn-success btn-sm" onclick="exportSingle(${i})">导出</button>
+                        <button class="btn btn-secondary btn-sm" onclick="copySingle(${i})">复制</button>
+                        <button class="btn btn-secondary btn-sm" onclick="previewConfig(${i})">预览</button>
+                        <button class="btn btn-secondary btn-sm" onclick="openEdit(${i})">编辑</button>
+                        <button class="btn btn-secondary btn-sm" onclick="addModelToConfig(${i})">添加</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteConfig(${i})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function renderRating(configIndex, rating) {
+            const safeRating = Math.max(0, Math.min(5, Number(rating) || 0));
+            return `<div class="rating-widget" title="拖动或点击评分" onpointerleave="stopRatingDrag()">
+                ${[1,2,3,4,5].map(star => `<button type="button" class="rating-star${star <= safeRating ? ' active' : ''}" onpointerdown="startRatingDrag(${configIndex}, ${star}, event)" onpointerenter="dragRating(${configIndex}, ${star})" onpointerup="stopRatingDrag()" aria-label="${star} 星">★</button>`).join('')}
+            </div>`;
+        }
+        function startRatingDrag(configIndex, rating, event) {
+            event.preventDefault();
+            window.__llmRatingDrag = true;
+            setRating(configIndex, rating);
+        }
+        function dragRating(configIndex, rating) {
+            if (!window.__llmRatingDrag) return;
+            setRating(configIndex, rating);
+        }
+        function stopRatingDrag() {
+            window.__llmRatingDrag = false;
+        }
+        function setRating(configIndex, rating) {
+            if (!configs[configIndex]) return;
+            configs[configIndex].rating = Math.max(0, Math.min(5, Number(rating) || 0));
+            saveToStorage();
+            renderList();
+        }
+        function openMemoModal(configIndex) {
+            const modal = document.getElementById('memoModal');
+            document.getElementById('memoConfigIndex').value = configIndex;
+            document.getElementById('memoText').value = configs[configIndex]?.memo || '';
+            modal.classList.add('active');
+            setTimeout(() => document.getElementById('memoText').focus(), 60);
+        }
+        function closeMemoModal() {
+            document.getElementById('memoModal').classList.remove('active');
+        }
+        function saveMemoModal() {
+            const index = Number(document.getElementById('memoConfigIndex').value);
+            if (!configs[index]) return;
+            configs[index].memo = document.getElementById('memoText').value.trim();
+            saveToStorage();
+            closeMemoModal();
+            renderList();
+            showToast('备忘录已保存');
+        }
+        let configDragIndex = null;
+        function startConfigDrag(index, event) {
+            configDragIndex = index;
+            event.currentTarget.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+        function dropConfig(targetIndex, event) {
+            event.preventDefault();
+            if (configDragIndex === null || configDragIndex === targetIndex) return;
+            const [moved] = configs.splice(configDragIndex, 1);
+            configs.splice(targetIndex, 0, moved);
+            saveToStorage();
+            renderList(targetIndex);
+            configDragIndex = null;
+            showToast('排序已更新');
+        }
+        function endConfigDrag(event) {
+            event.currentTarget.classList.remove('dragging');
+            configDragIndex = null;
+        }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function maskKey(k) { return k.length <= 8 ? '****' : k.substring(0,4) + '****' + k.slice(-4); }
+        function deleteConfig(i) { 
+            if(confirm('确定删除?')) { 
+                const item = document.querySelectorAll('.model-item')[i];
+                if (item) {
+                    item.classList.add('deleting');
+                    setTimeout(() => {
+                        configs.splice(i,1); 
+                        saveToStorage(); 
+                        renderList(); 
+                        showToast('已删除'); 
+                    }, 300);
+                } else {
+                    configs.splice(i,1); 
+                    saveToStorage(); 
+                    renderList(); 
+                    showToast('已删除'); 
+                }
+            } 
+        }
+        function addModelToConfig(i) {
+            const m = prompt('输入模型名称:');
+            if(m && m.trim()) {
+                if(!Array.isArray(configs[i].models)) configs[i].models = [configs[i].models];
+                configs[i].models.push(m.trim());
+                saveToStorage(); renderList(); showToast('已添加');
+            }
+        }
+        function openEdit(i) {
+            const c = configs[i];
+            document.getElementById('editIndex').value = i;
+            document.getElementById('editName').value = c.name;
+            document.getElementById('editUrl').value = c.url;
+            document.getElementById('editKey').value = c.key;
+            document.getElementById('editModel').value = (Array.isArray(c.models) ? c.models : [c.models]).join(', ');
+            document.getElementById('editModal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+        
+        function previewConfig(i) {
+            const c = configs[i];
+            const models = Array.isArray(c.models) ? c.models : [c.models];
+            
+            if (models.length === 1) {
+                showPreviewForModel(i, models[0]);
+            } else {
+                const modelButtons = models.map(m => 
+                    `<button class="btn btn-secondary btn-sm" onclick="showPreviewForModel(${i}, '${m}')" style="margin: 2px;">${m}</button>`
+                ).join('');
+                document.getElementById('previewContent').innerHTML = '<div style="margin-bottom: 12px;"><p style="color: var(--text-secondary); margin-bottom: 8px;">选择模型:</p>' + modelButtons + '</div>';
+                document.getElementById('previewModal').classList.add('active');
+            }
+        }
+        
+        function showPreviewForModel(configIndex, modelName) {
+            const c = configs[configIndex];
+            const data = {
+                env: {
+                    ANTHROPIC_BASE_URL: c.url,
+                    ANTHROPIC_AUTH_TOKEN: c.key
+                },
+                model: modelName
+            };
+            document.getElementById('previewContent').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('previewModal').classList.add('active');
+        }
+        
+        function copyPreview() {
+            const content = document.getElementById('previewContent').textContent;
+            navigator.clipboard.writeText(content).then(() => showToast('已复制'));
+        }
+        function saveEdit() {
+            const i = parseInt(document.getElementById('editIndex').value);
+            const models = document.getElementById('editModel').value.split(',').map(m => m.trim()).filter(m => m);
+            const oldRating = configs[i].rating || 0;
+            const oldMemo = configs[i].memo || '';
+            configs[i] = { name: document.getElementById('editName').value.trim(), url: document.getElementById('editUrl').value.trim(), key: document.getElementById('editKey').value.trim(), models, rating: oldRating, memo: oldMemo };
+            saveToStorage(); renderList(); closeModal(); showToast('已更新');
+        }
+        function updateJsonPreview() {
+            const p = document.getElementById('jsonPreview');
+            const select = document.getElementById('exportSelect');
+            if (!p || !select) return;
+            const selectedIndex = select.value;
+            
+            if(configs.length === 0) { 
+                p.textContent = '暂无配置'; 
+                return; 
+            }
+            
+            if (selectedIndex !== "") {
+                const c = configs[selectedIndex];
+                const models = Array.isArray(c.models) ? c.models : [c.models];
+                p.textContent = JSON.stringify({
+                    env: {
+                        ANTHROPIC_BASE_URL: c.url,
+                        ANTHROPIC_AUTH_TOKEN: c.key
+                    },
+                    model: models[0]
+                }, null, 2);
+            } else if (configs.length === 1) {
+                const c = configs[0];
+                const models = Array.isArray(c.models) ? c.models : [c.models];
+                p.textContent = JSON.stringify({
+                    env: {
+                        ANTHROPIC_BASE_URL: c.url,
+                        ANTHROPIC_AUTH_TOKEN: c.key
+                    },
+                    model: models[0]
+                }, null, 2);
+            } else {
+                p.textContent = '请选择上方配置';
+            }
+        }
+        
+        function updateExportSelect() {
+            const select = document.getElementById('exportSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">请选择配置</option>';
+            configs.forEach((c, i) => {
+                const models = Array.isArray(c.models) ? c.models : [c.models];
+                select.innerHTML += `<option value="${i}">${c.name} (${models[0]})</option>`;
+            });
+        }
+        
+        function updateExportPreview() {
+            updateJsonPreview();
+        }
+        function exportJson() {
+            const select = document.getElementById('exportSelect');
+            const selectedIndex = select ? select.value : "";
+            
+            if (configs.length === 0) { showToast('无配置'); return; }
+            if (selectedIndex === "" && configs.length > 1) { showToast('请先选择配置'); return; }
+            
+            const c = selectedIndex !== "" ? configs[selectedIndex] : configs[0];
+            const models = Array.isArray(c.models) ? c.models : [c.models];
+            const data = {
+                env: {
+                    ANTHROPIC_BASE_URL: c.url,
+                    ANTHROPIC_AUTH_TOKEN: c.key
+                },
+                model: models[0]
+            };
+            const json = JSON.stringify(data, null, 2);
+            download(json, 'settings.json');
+        }
+        function exportSingle(i) {
+            const c = configs[i];
+            const models = Array.isArray(c.models) ? c.models : [c.models];
+            
+            if (models.length === 1) {
+                doExport(i, models[0]);
+            } else {
+                const modelButtons = models.map(m => 
+                    `<button class="btn btn-success btn-sm" onclick="doExport(${i}, '${m}')" style="margin: 2px;">${m}</button>`
+                ).join('');
+                document.getElementById('previewContent').innerHTML = '<div style="margin-bottom: 12px;"><p style="color: var(--text-secondary); margin-bottom: 8px;">选择要导出的模型:</p>' + modelButtons + '</div>';
+                document.getElementById('previewModal').classList.add('active');
+            }
+        }
+        
+        function doExport(configIndex, modelName) {
+            const c = configs[configIndex];
+            const data = {
+                env: {
+                    ANTHROPIC_BASE_URL: c.url,
+                    ANTHROPIC_AUTH_TOKEN: c.key
+                },
+                model: modelName
+            };
+            document.getElementById('previewModal').classList.remove('active');
+            download(JSON.stringify(data, null, 2), 'settings.json');
+        }
+        function download(content, filename) {
+            if (window.showSaveFilePicker) {
+                const defaultPath = filename === 'settings.json' 
+                    ? 'C:\\Users\\Administrator\\.claude\\settings.json' 
+                    : filename;
+                window.showSaveFilePicker({
+                    suggestedName: filename,
+                    startIn: 'desktop'
+                }).then(fileHandle => {
+                    fileHandle.createWritable().then(writable => {
+                        writable.write(content).then(() => {
+                            writable.close();
+                            showToast('已保存到: ' + fileHandle.name);
+                        });
+                    });
+                }).catch(err => {
+                    if (err.name !== 'AbortError') {
+                        showToast('保存失败: ' + err.message);
+                    }
+                });
+            } else {
+                const b = new Blob([content], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(b);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast('已下载');
+            }
+        }
+        function copyJson() {
+            if(configs.length === 0) { showToast('无配置'); return; }
+            const data = {
+                env: {
+                    ANTHROPIC_BASE_URL: configs[0].url,
+                    ANTHROPIC_AUTH_TOKEN: configs[0].key
+                },
+                model: Array.isArray(configs[0].models) ? configs[0].models[0] : configs[0].models
+            };
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => showToast('已复制'));
+        }
+        function copySingle(i) {
+            const c = configs[i];
+            const models = Array.isArray(c.models) ? c.models : [c.models];
+            const data = {
+                env: {
+                    ANTHROPIC_BASE_URL: c.url,
+                    ANTHROPIC_AUTH_TOKEN: c.key
+                },
+                model: models[0]
+            };
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => showToast('已复制'));
+        }
+        async function testConnection(i, modelName) {
+            const c = configs[i];
+            const startTime = Date.now();
+            try {
+                const models = Array.isArray(c.models) ? c.models : [c.models];
+                const model = modelName || models[0] || 'gpt-3.5-turbo';
+                const response = await fetch(`${c.url.replace(/\/$/, '')}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${c.key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: 'user', content: '你好' }],
+                        temperature: 0.7,
+                        max_tokens: 50
+                    })
+                });
+
+                const latency = Date.now() - startTime;
+
+                let responseText = '';
+                try {
+                    responseText = await response.text();
+                    console.log('[' + model + '] 状态码:', response.status);
+                    console.log('[' + model + '] Content-Type:', response.headers.get('Content-Type'));
+                    console.log('[' + model + '] 响应内容:', responseText);
+                } catch (e) {
+                    console.log('读取响应失败:', e);
+                }
+
+                if (!response.ok) {
+                    let errorMsg = response.statusText;
+                    try {
+                        const json = JSON.parse(responseText);
+                        if (json.error?.message) {
+                            errorMsg = json.error.message;
+                        } else if (json.message) {
+                            errorMsg = json.message;
+                        } else {
+                            errorMsg = responseText.substring(0, 200);
+                        }
+                    } catch (e) {
+                        errorMsg = responseText.substring(0, 200) || response.statusText;
+                    }
+                    showToast('[' + model + '] 错误: ' + errorMsg);
+                } else {
+                    let valid = false;
+                    const contentType = response.headers.get('Content-Type') || '';
+                    const url = c.url.toLowerCase();
+                    
+                    // 已知的 API 域名列表
+                    const knownApiDomains = [
+                        'openrouter.ai', 'api.openai.com', 'api.anthropic.com', 
+                        'api.aimhc.cn', 'api.deepseek.com', 'api.siliconflow.cn'
+                    ];
+                    
+                    // 检查是不是已知 API 域名
+                    const isKnownDomain = knownApiDomains.some(domain => url.includes(domain));
+                    
+                    // 尝试解析 JSON
+                    try {
+                        const data = JSON.parse(responseText);
+                        console.log('[' + model + '] 解析数据:', data);
+                        
+                        if (data.error) {
+                            console.log('[' + model + '] 响应中包含错误:', data.error);
+                            showToast('[' + model + '] 错误: ' + (data.error.message || JSON.stringify(data.error)));
+                            return;
+                        }
+                        
+                        // 标准 OpenAI 格式
+                        valid = (data.data && Array.isArray(data.data) && data.data.length > 0) ||
+                                (data.choices && Array.isArray(data.choices) && data.choices.length > 0);
+                    } catch (e) {
+                        // 不是 JSON
+                        const trimmedText = responseText.trim();
+                        const isHtml = trimmedText.startsWith('<!DOCTYPE') || 
+                                       trimmedText.startsWith('<html') || 
+                                       trimmedText.includes('<!DOCTYPE') ||
+                                       trimmedText.includes('<html') ||
+                                       trimmedText.includes('<body');
+                        
+                        if (!isHtml) {
+                            // 不是 HTML，状态码 200 就算成功
+                            valid = true;
+                        } else if (isKnownDomain) {
+                            // 已知 API 域名，返回 HTML（可能是 CORS 限制），也算成功
+                            console.log('[' + model + '] 已知 API 域名，返回 HTML，判定为成功');
+                            valid = true;
+                        } else {
+                            // 未知域名，返回 HTML，失败
+                            console.log('[' + model + '] 未知域名，返回 HTML，判定为失败');
+                            valid = false;
+                        }
+                    }
+                    
+                    if (valid) {
+                        showToast('[' + model + '] 连接成功! 延迟: ' + latency + 'ms');
+                    } else {
+                        showToast('[' + model + '] 验证失败: 响应格式不正确');
+                    }
+                }
+            } catch (err) {
+                console.error('测试连接失败:', err);
+                showToast('[' + (modelName || '未知') + '] 连接失败: ' + err.message + ' (按F12查看详细日志)');
+            }
+        }
+
+        function testModelConnection(i, modelName) {
+            testConnection(i, modelName);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+        document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            const tab = b.dataset.tab;
+            if (tab === 'add') {
+                document.getElementById('add-tab').style.display = 'block';
+            } else if (tab === 'export') {
+                document.getElementById('add-tab').style.display = 'none';
+            }
+        }));
+        document.getElementById('editModal').addEventListener('click', e => { if(e.target.id === 'editModal') closeModal(); });
+        document.getElementById('previewModal').addEventListener('click', e => { if(e.target.id === 'previewModal') closePreview(); });
+        document.getElementById('memoModal').addEventListener('click', e => { if(e.target.id === 'memoModal') closeMemoModal(); });
+        document.addEventListener('pointerup', stopRatingDrag);
+        init();
+    </script>
+    <script src="cc-common.js?v=2.1.8"></script>
+</body>
+</html>

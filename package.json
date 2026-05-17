@@ -1,0 +1,19 @@
+{
+  "name": "v1-opentoolbox",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "离线优先的本地效率工具箱。",
+  "scripts": {
+    "check": "node scripts/smoke-check.mjs",
+    "start": "node scripts/dev-server.mjs"
+  },
+  "keywords": [
+    "toolbox",
+    "offline",
+    "productivity",
+    "local-first",
+    "本地工具箱"
+  ],
+  "license": "MIT"
+}

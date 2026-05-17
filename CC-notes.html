@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-notes">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超超笔记 - 超超工具箱</title>
+        <link rel="stylesheet" href="cc-styles.css?v=2.2.0">
+</head>
+<body>
+    <button class="back-btn" onclick="goHome()">🏠</button>
+    
+    <div class="main-card">
+        <div class="header">
+            <h1>📝 超超笔记</h1>
+            <p>简单好用的文本编辑器</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('notes')">笔记</button>
+            <button class="tab" onclick="switchTab('todos')">待办</button>
+        </div>
+
+        <div id="notes-panel">
+            <button class="add-btn" onclick="openNoteModal()">+ 新建笔记</button>
+            <div id="notes-list" style="margin-top: 20px;"></div>
+        </div>
+
+        <div id="todos-panel" style="display: none;">
+            <div class="filters">
+                <button class="filter active" onclick="filterTodos('all', this)">全部</button>
+                <button class="filter" onclick="filterTodos('active', this)">未完成</button>
+                <button class="filter" onclick="filterTodos('completed', this)">已完成</button>
+            </div>
+            <button class="add-btn" onclick="openTodoModal()">+ 新建待办</button>
+            <div id="todos-list" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="note-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="note-modal-title">新建笔记</div>
+            <input class="input-field" id="note-title" placeholder="标题">
+            <textarea class="textarea-field" id="note-content" placeholder="内容"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeNoteModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveNote()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="todo-modal">
+        <div class="modal-content">
+            <div class="modal-title">新建待办</div>
+            <input class="input-field" id="todo-input" placeholder="待办事项">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeTodoModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTodo()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+        
+        let currentTab = 'notes';
+        let currentFilter = 'all';
+        let editingNoteId = null;
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('notes-panel').style.display = tab === 'notes' ? 'block' : 'none';
+            document.getElementById('todos-panel').style.display = tab === 'todos' ? 'block' : 'none';
+        }
+
+        function getNotes() {
+            return JSON.parse(localStorage.getItem('cc_notes') || '[]');
+        }
+
+        function saveNotes(notes) {
+            localStorage.setItem('cc_notes', JSON.stringify(notes));
+        }
+
+        function renderNotes() {
+            const notes = getNotes();
+            const container = document.getElementById('notes-list');
+            if (notes.length === 0) {
+                container.innerHTML = '<div class="empty">还没有笔记，点击上方的按钮创建</div>';
+                return;
+            }
+            container.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <div class="note-header">
+                        <div>
+                            <div class="note-title">${note.title}</div>
+                            <div class="note-date">${note.date}</div>
+                        </div>
+                        <div class="note-actions">
+                            <button class="icon-btn" onclick="editNote('${note.id}')">编辑</button>
+                            <button class="icon-btn" onclick="deleteNote('${note.id}')">删除</button>
+                        </div>
+                    </div>
+                    <div class="note-content">${note.content}</div>
+                </div>
+            `).join('');
+        }
+
+        function openNoteModal() {
+            editingNoteId = null;
+            document.getElementById('note-modal-title').textContent = '新建笔记';
+            document.getElementById('note-title').value = '';
+            document.getElementById('note-content').value = '';
+            document.getElementById('note-modal').classList.add('show');
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-modal').classList.remove('show');
+        }
+
+        function saveNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').value;
+            if (!title) return;
+            
+            const notes = getNotes();
+            const date = new Date().toLocaleDateString('zh-CN');
+            
+            if (editingNoteId) {
+                const index = notes.findIndex(n => n.id === editingNoteId);
+                notes[index] = { id: editingNoteId, title, content, date };
+            } else {
+                notes.unshift({ id: Date.now().toString(), title, content, date });
+            }
+            
+            saveNotes(notes);
+            closeNoteModal();
+            renderNotes();
+        }
+
+        function editNote(id) {
+            const notes = getNotes();
+            const note = notes.find(n => n.id === id);
+            editingNoteId = id;
+            document.getElementById('note-modal-title').textContent = '编辑笔记';
+            document.getElementById('note-title').value = note.title;
+            document.getElementById('note-content').value = note.content;
+            document.getElementById('note-modal').classList.add('show');
+        }
+
+        function deleteNote(id) {
+            const notes = getNotes().filter(n => n.id !== id);
+            saveNotes(notes);
+            renderNotes();
+        }
+
+        function getTodos() {
+            return JSON.parse(localStorage.getItem('cc_todos') || '[]');
+        }
+
+        function saveTodos(todos) {
+            localStorage.setItem('cc_todos', JSON.stringify(todos));
+        }
+
+        function renderTodos() {
+            const todos = getTodos();
+            let filtered = todos;
+            if (currentFilter === 'active') filtered = todos.filter(t => !t.completed);
+            if (currentFilter === 'completed') filtered = todos.filter(t => t.completed);
+            
+            const container = document.getElementById('todos-list');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty">没有待办事项</div>';
+                return;
+            }
+            container.innerHTML = filtered.map(todo => `
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo('${todo.id}')">
+                    <span class="todo-text ${todo.completed ? 'completed' : ''}">${todo.text}</span>
+                    <button class="icon-btn" onclick="deleteTodo('${todo.id}')">删除</button>
+                </div>
+            `).join('');
+        }
+
+        function openTodoModal() {
+            document.getElementById('todo-input').value = '';
+            document.getElementById('todo-modal').classList.add('show');
+        }
+
+        function closeTodoModal() {
+            document.getElementById('todo-modal').classList.remove('show');
+        }
+
+        function saveTodo() {
+            const text = document.getElementById('todo-input').value;
+            if (!text) return;
+            
+            const todos = getTodos();
+            todos.unshift({ id: Date.now().toString(), text, completed: false });
+            saveTodos(todos);
+            closeTodoModal();
+            renderTodos();
+        }
+
+        function toggleTodo(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            todo.completed = !todo.completed;
+            saveTodos(todos);
+            renderTodos();
+        }
+
+        function deleteTodo(id) {
+            const todos = getTodos().filter(t => t.id !== id);
+            saveTodos(todos);
+            renderTodos();
+        }
+
+        function filterTodos(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter').forEach(f => f.classList.remove('active'));
+            btn.classList.add('active');
+            renderTodos();
+        }
+
+        renderNotes();
+        renderTodos();
+    </script>
+    <script src="cc-common.js?v=2.1.8"></script>
+</body>
+</html>

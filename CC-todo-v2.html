@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-todo-v2">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超超Todo V2 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=3.4.1">
+    <style>
+        html[data-page="cc-todo-v2"] {
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f5f5f5;
+            --text-secondary: rgba(255, 255, 255, 0.5);
+            --text-muted: rgba(255, 255, 255, 0.35);
+            --accent-color: #c49a6c;
+            --accent-light: #d4b896;
+            --accent-gradient: linear-gradient(135deg, #c49a6c 0%, #a67c52 100%);
+            --success: #7fb069;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        html[data-page="cc-todo-v2"] body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+        }
+
+        html[data-page="cc-todo-v2"] .todo-app {
+            max-width: 92%;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        html[data-page="cc-todo-v2"] .main-layout,
+        html[data-page="cc-todo-v2"] .bottom-bar,
+        html[data-page="cc-todo-v2"] .completed-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* 页面标题区 */
+        html[data-page="cc-todo-v2"] .todo-header {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        html[data-page="cc-todo-v2"] .todo-header .eyebrow {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.3rem;
+        }
+
+        html[data-page="cc-todo-v2"] .todo-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+        }
+
+        html[data-page="cc-todo-v2"] .todo-header .subtitle {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 顶部状态栏 */
+        html[data-page="cc-todo-v2"] .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        html[data-page="cc-todo-v2"] .header-center {
+            text-align: center;
+            flex: 1;
+        }
+
+        html[data-page="cc-todo-v2"] .header-center h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo-v2"] .header-center p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        html[data-page="cc-todo-v2"] .header-stats {
+            display: flex;
+            gap: 8px;
+        }
+
+        html[data-page="cc-todo-v2"] .stat-pill {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo-v2"] .stat-pill .num {
+            font-weight: 700;
+            color: #d4a574;
+        }
+
+        /* 主体布局：左侧输入+中间列表，右侧概览放下面 */
+        html[data-page="cc-todo-v2"] .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        /* 玻璃卡片 */
+        html[data-page="cc-todo-v2"] .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        html[data-page="cc-todo-v2"] .glass-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 左侧添加区 */
+        html[data-page="cc-todo-v2"] .add-section textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            resize: none;
+            height: 60px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        html[data-page="cc-todo-v2"] .add-section textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        html[data-page="cc-todo-v2"] .add-section textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        html[data-page="cc-todo-v2"] .char-count {
+            text-align: right;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        html[data-page="cc-todo-v2"] .btn-primary {
+            width: 100%;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        html[data-page="cc-todo-v2"] .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* 类型选择 */
+        html[data-page="cc-todo-v2"] .type-btns {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        html[data-page="cc-todo-v2"] .type-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        html[data-page="cc-todo-v2"] .type-btn:hover,
+        html[data-page="cc-todo-v2"] .type-btn.active {
+            border-color: var(--accent-color);
+            color: #d4b896;
+            background: rgba(196, 154, 108, 0.12);
+        }
+
+        /* 星级 - 参考 llm-config-manager */
+        html[data-page="cc-todo-v2"] .star-rating {
+            display: flex;
+            gap: 2px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo-v2"] .star-rating-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+
+        html[data-page="cc-todo-v2"] .star {
+            width: 18px;
+            height: 18px;
+            min-width: 0;
+            min-height: 0;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.28);
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            box-shadow: none;
+            outline: none;
+            transition: color 0.16s ease, transform 0.16s ease, text-shadow 0.16s ease;
+        }
+
+        html[data-page="cc-todo-v2"] .star.active,
+        html[data-page="cc-todo-v2"] .star:hover {
+            color: #fbbf24;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.28);
+        }
+
+        html[data-page="cc-todo-v2"] .star:hover {
+            transform: translateY(-1px);
+        }
+
+        /* 标签 */
+        html[data-page="cc-todo-v2"] .tag-input-wrap {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-input-wrap input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 5px 8px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            outline: none;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-input-wrap button {
+            background: rgba(196, 154, 108, 0.6);
+            border: none;
+            border-radius: 6px;
+            padding: 2px 10px;
+            color: white;
+            font-size: 0.7rem;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-list {
+            display: flex;
+            gap: 4px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-item {
+            background: rgba(196, 154, 108, 0.12);
+            border: 1px solid rgba(196, 154, 108, 0.25);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.7rem;
+            color: #d4b896;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-item .remove-tag {
+            cursor: pointer;
+            font-size: 0.65rem;
+            opacity: 0.6;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-item .remove-tag:hover {
+            opacity: 1;
+        }
+
+        /* 颜色 */
+        html[data-page="cc-todo-v2"] .color-options {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        html[data-page="cc-todo-v2"] .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+
+        html[data-page="cc-todo-v2"] .color-dot:hover {
+            transform: scale(1.15);
+        }
+
+        html[data-page="cc-todo-v2"] .color-dot.active {
+            border-color: white;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 中间任务区 */
+        html[data-page="cc-todo-v2"] .task-section {
+            min-height: 400px;
+        }
+
+        /* 视图+筛选同一行 */
+        html[data-page="cc-todo-v2"] .task-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        html[data-page="cc-todo-v2"] .header-stats-inline {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo-v2"] .stat-inline {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo-v2"] .stat-inline b {
+            color: #d4a574;
+            font-weight: 700;
+        }
+
+        html[data-page="cc-todo-v2"] .view-tabs {
+            display: flex;
+            gap: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 3px;
+            width: fit-content;
+        }
+
+        html[data-page="cc-todo-v2"] .view-tab {
+            padding: 5px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+
+        html[data-page="cc-todo-v2"] .view-tab.active {
+            background: rgba(196, 154, 108, 0.18);
+            color: #d4b896;
+            font-weight: 600;
+        }
+
+        html[data-page="cc-todo-v2"] .filter-dropdown {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            outline: none;
+            width: auto;
+            min-width: 100px;
+        }
+
+        html[data-page="cc-todo-v2"] .task-group {
+            margin-bottom: 1rem;
+        }
+
+        html[data-page="cc-todo-v2"] .group-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        html[data-page="cc-todo-v2"] .group-header .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        html[data-page="cc-todo-v2"] .group-header .count {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 0.7rem;
+        }
+
+        /* 任务行：左侧色条+拖动+复选框+内容 */
+        html[data-page="cc-todo-v2"] .task-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 0;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: stretch;
+            transition: all 0.2s;
+            cursor: grab;
+            position: relative;
+            overflow: hidden;
+        }
+
+        html[data-page="cc-todo-v2"] .task-item:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        html[data-page="cc-todo-v2"] .task-color-bar {
+            width: 4px;
+            flex-shrink: 0;
+            align-self: stretch;
+        }
+
+        html[data-page="cc-todo-v2"] .task-drag-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.7rem;
+            cursor: grab;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        html[data-page="cc-todo-v2"] .task-item:hover .task-drag-handle {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        html[data-page="cc-todo-v2"] .task-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            font-size: 0.6rem;
+            margin: auto 0;
+        }
+
+        html[data-page="cc-todo-v2"] .task-checkbox:hover {
+            border-color: var(--accent-color);
+        }
+
+        html[data-page="cc-todo-v2"] .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        html[data-page="cc-todo-v2"] .task-body {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        html[data-page="cc-todo-v2"] .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        html[data-page="cc-todo-v2"] .task-title {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            word-break: break-all;
+        }
+
+        html[data-page="cc-todo-v2"] .task-title.done {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        html[data-page="cc-todo-v2"] .task-meta {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        html[data-page="cc-todo-v2"] .task-tag {
+            font-size: 0.65rem;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: rgba(196, 154, 108, 0.1);
+            color: #d4b896;
+            cursor: pointer;
+        }
+
+        html[data-page="cc-todo-v2"] .task-tag:hover {
+            background: rgba(196, 154, 108, 0.22);
+        }
+
+        html[data-page="cc-todo-v2"] .task-time {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        html[data-page="cc-todo-v2"] .task-stars {
+            font-size: 0.7rem;
+            color: #ffd700;
+            letter-spacing: -1px;
+        }
+
+        html[data-page="cc-todo-v2"] .task-type-badge {
+            font-size: 0.65rem;
+            padding: 1px 7px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+        }
+
+        html[data-page="cc-todo-v2"] .task-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding-right: 8px;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo-v2"] .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        html[data-page="cc-todo-v2"] .task-actions button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+        }
+
+        html[data-page="cc-todo-v2"] .task-actions button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 底部概览横条 */
+        html[data-page="cc-todo-v2"] .bottom-bar {
+            margin-top: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+
+        html[data-page="cc-todo-v2"] .bottom-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius);
+            padding: 1rem;
+        }
+
+        html[data-page="cc-todo-v2"] .bottom-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        /* 进度环缩小 */
+        html[data-page="cc-todo-v2"] .progress-ring-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-ring {
+            position: relative;
+            width: 90px;
+            height: 90px;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        html[data-page="cc-todo-v2"] .progress-ring-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 6;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-ring-fill {
+            fill: none;
+            stroke: url(#ringGradient);
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-text .num {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        html[data-page="cc-todo-v2"] .progress-text .label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        html[data-page="cc-todo-v2"] .mini-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 0.5rem;
+        }
+
+        html[data-page="cc-todo-v2"] .mini-stat {
+            text-align: center;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        html[data-page="cc-todo-v2"] .mini-stat .num {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo-v2"] .mini-stat .label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        html[data-page="cc-todo-v2"] .distribution h4,
+        html[data-page="cc-todo-v2"] .tags-section h4 {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        html[data-page="cc-todo-v2"] .dist-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        html[data-page="cc-todo-v2"] .dist-bar-wrap {
+            flex: 1;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        html[data-page="cc-todo-v2"] .dist-bar {
+            height: 100%;
+            border-radius: 100px;
+            transition: width 0.5s ease;
+        }
+
+        html[data-page="cc-todo-v2"] .dist-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            width: 38px;
+        }
+
+        html[data-page="cc-todo-v2"] .dist-num {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            width: 16px;
+            text-align: right;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-page="cc-todo-v2"] .tag-row:last-child {
+            border-bottom: none;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-color {
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+        }
+
+        html[data-page="cc-todo-v2"] .tag-name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo-v2"] .tag-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* 底部已完成 */
+        html[data-page="cc-todo-v2"] .completed-section {
+            margin-top: 1rem;
+        }
+
+        html[data-page="cc-todo-v2"] .completed-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            transition: color 0.2s;
+        }
+
+        html[data-page="cc-todo-v2"] .completed-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        html[data-page="cc-todo-v2"] .completed-toggle .arrow {
+            transition: transform 0.3s;
+            display: inline-block;
+        }
+
+        html[data-page="cc-todo-v2"] .completed-toggle.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        html[data-page="cc-todo-v2"] .completed-list {
+            animation: slideDown 0.3s ease;
+        }
+
+        html[data-page="cc-todo-v2"] .completed-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0.5;
+        }
+
+        html[data-page="cc-todo-v2"] .completed-item:last-child {
+            border-bottom: none;
+        }
+
+        html[data-page="cc-todo-v2"] .clear-completed {
+            text-align: right;
+            padding: 6px 12px;
+        }
+
+        html[data-page="cc-todo-v2"] .clear-completed button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        html[data-page="cc-todo-v2"] .clear-completed button:hover {
+            color: #c49a6c;
+        }
+
+        /* 空状态 */
+        html[data-page="cc-todo-v2"] .empty-state {
+            text-align: center;
+            padding: 36px 20px;
+            color: var(--text-muted);
+        }
+
+        html[data-page="cc-todo-v2"] .empty-state .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            opacity: 0.3;
+        }
+
+        html[data-page="cc-todo-v2"] .empty-state p {
+            font-size: 0.8rem;
+        }
+
+        /* 撤销条 */
+        html[data-page="cc-todo-v2"] .undo-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 40, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        html[data-page="cc-todo-v2"] .undo-bar button {
+            background: rgba(196, 154, 108, 0.8);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 14px;
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* 编辑弹窗 */
+        html[data-page="cc-todo-v2"] .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        html[data-page="cc-todo-v2"] .modal {
+            background: rgba(30, 30, 45, 0.2);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 400px;
+            max-width: 90vw;
+        }
+
+        html[data-page="cc-todo-v2"] .modal h3 {
+            margin-bottom: 16px;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        html[data-page="cc-todo-v2"] .modal input,
+        html[data-page="cc-todo-v2"] .modal select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 10px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        html[data-page="cc-todo-v2"] .modal input:focus,
+        html[data-page="cc-todo-v2"] .modal select:focus {
+            border-color: var(--accent-color);
+        }
+
+        html[data-page="cc-todo-v2"] .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        html[data-page="cc-todo-v2"] .modal-actions button {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+        }
+
+        html[data-page="cc-todo-v2"] .modal-actions .cancel {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        html[data-page="cc-todo-v2"] .modal-actions .save {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1100px) {
+            html[data-page="cc-todo-v2"] .main-layout {
+                grid-template-columns: 240px 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            html[data-page="cc-todo-v2"] .main-layout {
+                grid-template-columns: 1fr;
+            }
+            html[data-page="cc-todo-v2"] .add-section {
+                order: -1;
+            }
+            html[data-page="cc-todo-v2"] .header-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+            html[data-page="cc-todo-v2"] .header-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            html[data-page="cc-todo-v2"] .bottom-bar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-app">
+        <svg width="0" height="0">
+            <defs>
+                <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#c49a6c"/>
+                    <stop offset="100%" style="stop-color:#a67c52"/>
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <!-- 页面标题 -->
+        <header class="todo-header">
+            <p class="eyebrow">Super Todo V2</p>
+            <h1>超超Todo V2</h1>
+            <p class="subtitle">高级效率仪表盘，一眼知道今天该做什么</p>
+        </header>
+
+        <!-- 顶部状态栏 -->
+        <div class="header-bar">
+            <div class="header-center">
+                <h2 id="greeting">今天也要加油呀！</h2>
+                <p>今天还有 <span id="pendingText">0</span> 件待办，已完成 <span id="completedText">0</span> 件</p>
+            </div>
+        </div>
+
+        <!-- 主体：左输入 + 中列表 -->
+        <div class="main-layout">
+            <!-- 左侧添加 -->
+            <aside class="glass-card add-section">
+                <h3>快速添加</h3>
+                <textarea id="taskInput" placeholder="今天要完成什么？" maxlength="120"></textarea>
+                <div class="char-count"><span id="charCount">0</span>/120</div>
+                <button class="btn-primary" id="addBtn">添加任务</button>
+
+                <div class="type-btns">
+                    <button class="type-btn active" data-type="once">一次性</button>
+                    <button class="type-btn" data-type="daily">每日</button>
+                    <button class="type-btn" data-type="weekly">每周</button>
+                    <button class="type-btn" data-type="monthly">每月</button>
+                </div>
+
+                <div class="star-rating" id="starRating">
+                    <span class="star-rating-label">优先级</span>
+                    <span class="star active" data-star="1">★</span>
+                    <span class="star active" data-star="2">★</span>
+                    <span class="star active" data-star="3">★</span>
+                    <span class="star" data-star="4">★</span>
+                    <span class="star" data-star="5">★</span>
+                </div>
+
+                <div class="tag-input-wrap">
+                    <input type="text" id="tagInput" placeholder="标签，回车添加" />
+                    <button id="addTagBtn">+</button>
+                </div>
+                <div class="tag-list" id="tagList"></div>
+
+                <div style="margin-top:8px">
+                    <span style="font-size:0.7rem;color:var(--text-muted)">颜色</span>
+                    <div class="color-options" id="colorOptions"></div>
+                </div>
+            </aside>
+
+            <!-- 中间任务区 -->
+            <section class="task-section">
+                <div class="task-toolbar">
+                    <div class="view-tabs">
+                        <button class="view-tab" data-view="today">今日视图</button>
+                    <button class="view-tab active" data-view="category">分类视图</button>
+                    <button class="view-tab" data-view="done">已完成</button>
+                    </div>
+                    <div class="header-stats-inline">
+                        <span class="stat-inline">进度 <b id="progressText">0/0</b></span>
+                        <span class="stat-inline">重要 <b id="highText">0</b></span>
+                        <span class="stat-inline">重复 <b id="repeatText">0</b></span>
+                    </div>
+                    <select class="filter-dropdown" id="filterDropdown">
+                        <option value="all">全部</option>
+                        <option value="today">今日</option>
+                        <option value="important">★★★★★</option>
+                        <option value="high">★★★★☆</option>
+                        <option value="mid">★★★☆☆</option>
+                        <option value="low">★★☆☆☆</option>
+                        <option value="repeat">重复</option>
+                    </select>
+                </div>
+                <div id="taskContainer"></div>
+            </section>
+        </div>
+
+        <!-- 底部概览三栏 -->
+        <div class="bottom-bar">
+            <div class="bottom-card">
+                <h3>今日概览</h3>
+                <div class="progress-ring-wrap">
+                    <div class="progress-ring">
+                        <svg width="90" height="90" viewBox="0 0 90 90">
+                            <circle class="progress-ring-bg" cx="45" cy="45" r="38"/>
+                            <circle class="progress-ring-fill" cx="45" cy="45" r="38" id="progressRing"
+                                stroke-dasharray="238.76" stroke-dashoffset="238.76"/>
+                        </svg>
+                        <div class="progress-text">
+                            <div class="num" id="ringNum">0/0</div>
+                            <div class="label">进度</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mini-stats">
+                    <div class="mini-stat"><div class="num" id="statTotal">0</div><div class="label">总任务</div></div>
+                    <div class="mini-stat"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
+                    <div class="mini-stat"><div class="num" id="statPending">0</div><div class="label">待完成</div></div>
+                    <div class="mini-stat"><div class="num" id="statRate">0%</div><div class="label">完成率</div></div>
+                </div>
+            </div>
+            <div class="bottom-card">
+                <h3>任务分布</h3>
+                <div id="distContainer"></div>
+            </div>
+            <div class="bottom-card">
+                <h3>标签</h3>
+                <div id="tagStatsContainer"></div>
+            </div>
+        </div>
+
+        <!-- 底部已完成 -->
+        <section class="glass-card completed-section" id="completedSection" style="display:none">
+            <div class="completed-toggle" id="completedToggle">
+                <span>已完成 <span id="completedCount">0</span> 项</span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="completed-list" id="completedList" style="display:none"></div>
+        </section>
+    </div>
+
+    <!-- 撤销提示 -->
+    <div class="undo-bar" id="undoBar" style="display:none">
+        <span>任务已标记完成</span>
+        <button id="undoBtn">撤销</button>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" style="display:none">
+        <div class="modal">
+            <h3>编辑任务</h3>
+            <input type="text" id="editTitle" placeholder="任务内容" />
+            <select id="editType">
+                <option value="once">一次性</option>
+                <option value="daily">每日</option>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+            </select>
+            <div id="editStarRating" class="star-rating" style="justify-content:center;margin:8px 0">
+                <span class="star active" data-edit-star="1">★</span>
+                <span class="star active" data-edit-star="2">★</span>
+                <span class="star active" data-edit-star="3">★</span>
+                <span class="star" data-edit-star="4">★</span>
+                <span class="star" data-edit-star="5">★</span>
+            </div>
+            <div class="tag-input-wrap" style="margin-bottom:8px">
+                <input type="text" id="editTagInput" placeholder="标签，回车添加" />
+                <button id="editAddTagBtn">+</button>
+            </div>
+            <div class="tag-list" id="editTagList" style="margin-bottom:8px"></div>
+            <div style="margin-bottom:10px">
+                <span style="font-size:0.7rem;color:var(--text-muted)">颜色</span>
+                <div class="color-options" id="editColorOptions"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel" id="editCancel">取消</button>
+                <button class="save" id="editSave">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const STORAGE_KEY = 'cc_todo_v2_tasks';
+        const COLORS = ['#c49a6c', '#b88a5c', '#a67c52', '#8b9a7d', '#7a8f6e', '#d4a574', '#9a8b7a'];
+        const TYPES = [
+            { value: 'once', label: '一次性' },
+            { value: 'daily', label: '每日' },
+            { value: 'weekly', label: '每周' },
+            { value: 'monthly', label: '每月' }
+        ];
+
+        let tasks = [];
+        let currentView = 'category';
+        let showCompleted = false;
+        let filterType = 'all';
+        let undoTask = null;
+        let undoTimer = null;
+        let editingId = null;
+        let editStars = 3;
+        let newTaskState = { type: 'once', stars: 3, tags: [], color: '#c49a6c' };
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function saveTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try { tasks = JSON.parse(raw); } catch (e) {}
+            }
+            // 迁移旧数据：priority -> stars
+            tasks.forEach(t => {
+                if (t.priority && !t.stars) {
+                    t.stars = t.priority === 'high' ? 5 : t.priority === 'mid' ? 3 : 1;
+                    delete t.priority;
+                }
+            });
+            // 自动重置重复任务
+            autoResetRepeats();
+            if (!tasks.length) {
+                tasks = [
+                    { id: generateId(), title: '完成产品设计稿', type: 'once', stars: 5, tags: ['重要'], color: '#c49a6c', completed: false },
+                    { id: generateId(), title: '与团队同步项目进度', type: 'weekly', stars: 5, tags: ['工作'], color: '#b88a5c', completed: false },
+                    { id: generateId(), title: '阅读《设计心理学》', type: 'once', stars: 3, tags: ['学习'], color: '#8b9a7d', completed: false },
+                    { id: generateId(), title: '健身 30 分钟', type: 'daily', stars: 3, tags: ['健康'], color: '#d4a574', completed: false },
+                    { id: generateId(), title: '整理邮箱', type: 'once', stars: 1, tags: [], color: '#9a8b7a', completed: false },
+                    { id: generateId(), title: '每天喝 8 杯水', type: 'daily', stars: 3, tags: ['健康'], color: '#a67c52', completed: false },
+                    { id: generateId(), title: '每周复盘总结', type: 'weekly', stars: 3, tags: ['工作'], color: '#7a8f6e', completed: false },
+                    { id: generateId(), title: '回复客户邮件', type: 'once', stars: 5, tags: ['工作'], color: '#c49a6c', completed: true },
+                    { id: generateId(), title: '晨间冥想', type: 'daily', stars: 1, tags: ['健康'], color: '#8b9a7d', completed: true },
+                    { id: generateId(), title: '整理桌面文件', type: 'once', stars: 1, tags: [], color: '#9a8b7a', completed: true }
+                ];
+                saveTasks();
+            }
+        }
+
+        function getPending() { return tasks.filter(t => !t.completed); }
+        function getCompleted() { return tasks.filter(t => t.completed); }
+
+        function autoResetRepeats() {
+            const now = new Date();
+            const todayStr = now.toDateString();
+            const lastCheck = localStorage.getItem('cc_todo_v2_last_check');
+            if (lastCheck === todayStr) return;
+
+            let changed = false;
+            tasks.forEach(t => {
+                if (t.type === 'once') return;
+                if (!t.completed) return;
+
+                const completedDate = t.completedAt ? new Date(t.completedAt) : null;
+                if (!completedDate) return;
+
+                const shouldReset = (
+                    t.type === 'daily' && completedDate.toDateString() !== todayStr
+                ) || (
+                    t.type === 'weekly' && (
+                        completedDate.getDay() > now.getDay() ||
+                        now.getTime() - completedDate.getTime() > 7 * 24 * 60 * 60 * 1000
+                    )
+                ) || (
+                    t.type === 'monthly' && (
+                        completedDate.getMonth() !== now.getMonth() ||
+                        completedDate.getFullYear() !== now.getFullYear()
+                    )
+                );
+
+                if (shouldReset) {
+                    t.completed = false;
+                    delete t.completedAt;
+                    changed = true;
+                }
+            });
+
+            if (changed) saveTasks();
+            localStorage.setItem('cc_todo_v2_last_check', todayStr);
+        }
+
+        function renderStars(count) {
+            const c = count || 3;
+            return '★'.repeat(c) + '<span style="color:rgba(255,255,255,0.12)">' + '★'.repeat(5 - c) + '</span>';
+        }
+
+        function updateHeader() {
+            const pending = getPending().length;
+            const completed = getCompleted().length;
+            const total = tasks.length;
+            document.getElementById('pendingText').textContent = pending;
+            document.getElementById('completedText').textContent = completed;
+            document.getElementById('progressText').textContent = completed + ' / ' + total;
+            document.getElementById('highText').textContent = tasks.filter(t => t.stars >= 4 && !t.completed).length;
+            document.getElementById('repeatText').textContent = tasks.filter(t => t.type !== 'once' && !t.completed).length;
+        }
+
+        function updateOverview() {
+            const pending = getPending().length;
+            const completed = getCompleted().length;
+            const total = tasks.length;
+            const rate = total ? Math.round((completed / total) * 100) : 0;
+            const circumference = 2 * Math.PI * 38;
+
+            document.getElementById('ringNum').textContent = completed + '/' + total;
+            document.getElementById('progressRing').style.strokeDashoffset = circumference - (rate / 100) * circumference;
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statDone').textContent = completed;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statRate').textContent = rate + '%';
+
+            // 分布
+            const counts = { once: 0, daily: 0, weekly: 0, monthly: 0 };
+            tasks.forEach(t => { if (counts[t.type] !== undefined) counts[t.type]++; });
+            const max = Math.max(...Object.values(counts), 1);
+            const distColors = { once: '#c49a6c', daily: '#b88a5c', weekly: '#a67c52', monthly: '#8b9a7d' };
+            const distLabels = { once: '一次性', daily: '每日', weekly: '每周', monthly: '每月' };
+            document.getElementById('distContainer').innerHTML = Object.entries(counts).map(([k, v]) => `
+                <div class="dist-item">
+                    <span class="dist-label">${distLabels[k]}</span>
+                    <div class="dist-bar-wrap"><div class="dist-bar" style="width:${(v/max)*100}%;background:${distColors[k]}"></div></div>
+                    <span class="dist-num">${v}</span>
+                </div>
+            `).join('');
+
+            // 标签统计
+            const tagMap = {};
+            tasks.forEach(t => {
+                (t.tags || []).forEach(tag => {
+                    if (!tagMap[tag]) tagMap[tag] = { count: 0, color: t.color };
+                    tagMap[tag].count++;
+                });
+            });
+            const tagList = Object.entries(tagMap).sort((a, b) => b[1].count - a[1].count).slice(0, 8);
+            document.getElementById('tagStatsContainer').innerHTML = tagList.map(([name, info]) => `
+                <div class="tag-row">
+                    <div class="tag-info"><div class="tag-color" style="background:${info.color}"></div><span class="tag-name">${escapeHtml(name)}</span></div>
+                    <span class="tag-count">${info.count}</span>
+                </div>
+            `).join('') || '<div style="color:var(--text-muted);font-size:0.7rem;padding:4px 0">暂无标签</div>';
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('taskContainer');
+            const pending = getPending();
+            const completed = getCompleted();
+
+            if (currentView === 'today') {
+                const filtered = filterType === 'important' ? pending.filter(t => t.stars === 5)
+                    : filterType === 'high' ? pending.filter(t => t.stars === 4)
+                    : filterType === 'mid' ? pending.filter(t => t.stars === 3)
+                    : filterType === 'low' ? pending.filter(t => t.stars <= 2)
+                    : filterType === 'repeat' ? pending.filter(t => t.type !== 'once')
+                    : filterType.startsWith('tag:') ? pending.filter(t => t.tags && t.tags.includes(filterType.slice(4)))
+                    : pending;
+                const groups = { s5: [], s4: [], s3: [], s2: [], s1: [], repeat: [] };
+                filtered.forEach(t => {
+                    if (t.type !== 'once') groups.repeat.push(t);
+                    else if (t.stars === 5) groups.s5.push(t);
+                    else if (t.stars === 4) groups.s4.push(t);
+                    else if (t.stars === 3) groups.s3.push(t);
+                    else if (t.stars === 2) groups.s2.push(t);
+                    else groups.s1.push(t);
+                });
+                const labels = {
+                    s5: ['★★★★★ 最高优先级', '#c49a6c'],
+                    s4: ['★★★★☆ 高优先级', '#d4a574'],
+                    s3: ['★★★☆☆ 普通', '#b88a5c'],
+                    s2: ['★★☆☆☆ 较低', '#9a8b7a'],
+                    s1: ['★☆☆☆☆ 最低', '#7a7068'],
+                    repeat: ['重复任务', '#8b9a7d']
+                };
+                container.innerHTML = Object.entries(groups).filter(([_, arr]) => arr.length).map(([key, arr]) => `
+                    <div class="task-group">
+                        <div class="group-header">
+                            <span class="dot" style="background:${labels[key][1]}"></span>
+                            <span>${labels[key][0]}</span>
+                            <span class="count">${arr.length}</span>
+                        </div>
+                        ${arr.map(t => renderTaskItem(t)).join('')}
+                    </div>
+                `).join('') || (pending.length ? '' : '<div class="empty-state"><div class="empty-icon">✅</div><p>太棒了！今天的任务都完成了</p></div>');
+                if (!pending.length && !container.innerHTML) container.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>太棒了！今天的任务都完成了</p></div>';
+            } else if (currentView === 'category') {
+                container.innerHTML = TYPES.map(type => {
+                    const arr = pending.filter(t => t.type === type.value);
+                    return arr.length ? `
+                        <div class="task-group">
+                            <div class="group-header"><span style="color:var(--text-secondary)">${type.label}</span><span class="count">${arr.length}</span></div>
+                            ${arr.map(t => renderTaskItem(t)).join('')}
+                        </div>
+                    ` : '';
+                }).join('') || '<div class="empty-state"><div class="empty-icon">📂</div><p>暂无任务</p></div>';
+            } else {
+                container.innerHTML = completed.length ? `<div class="task-group">${completed.map(t => renderTaskItem(t)).join('')}</div>`
+                    : '<div class="empty-state"><div class="empty-icon">📂</div><p>还没有已完成的任务</p></div>';
+            }
+
+            // 已完成区域
+            const compSection = document.getElementById('completedSection');
+            if (completed.length && currentView !== 'done') {
+                compSection.style.display = '';
+                document.getElementById('completedCount').textContent = completed.length;
+                document.getElementById('completedList').innerHTML = completed.map(t => `
+                    <div class="completed-item">
+                        <div class="task-checkbox checked" onclick="todoApp.toggleTask('${t.id}')">✓</div>
+                        <div class="task-content"><div class="task-title" style="text-decoration:line-through;color:var(--text-muted)">${escapeHtml(t.title)}</div></div>
+                        <span class="task-type-badge">${TYPES.find(x => x.value === t.type)?.label || '一次性'}</span>
+                    </div>
+                `).join('') + `<div class="clear-completed"><button onclick="todoApp.clearCompleted()">🗑 清空已完成</button></div>`;
+            } else {
+                compSection.style.display = 'none';
+            }
+
+            updateHeader();
+            updateOverview();
+            initDrag();
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            const month = (d.getMonth() + 1);
+            const day = d.getDate();
+            const hours = d.getHours().toString().padStart(2, '0');
+            const mins = d.getMinutes().toString().padStart(2, '0');
+            return month + '/' + day + ' ' + hours + ':' + mins;
+        }
+
+        function renderTaskItem(t) {
+            const typeLabel = TYPES.find(x => x.value === t.type)?.label || '一次性';
+            const color = t.color || '#c49a6c';
+            const timeStr = t.type === 'once' && t.createdAt ? '<span class="task-time">' + formatDate(t.createdAt) + '</span>' : '';
+            return `
+                <div class="task-item" data-id="${t.id}" draggable="true">
+                    <div class="task-color-bar" style="background:${color}"></div>
+                    <div class="task-drag-handle">⋮⋮</div>
+                    <div class="task-body">
+                        <div class="task-checkbox ${t.completed ? 'checked' : ''}" onclick="todoApp.toggleTask('${t.id}')">${t.completed ? '✓' : ''}</div>
+                        <div class="task-content">
+                            <div class="task-title ${t.completed ? 'done' : ''}">${escapeHtml(t.title)}</div>
+                            <div class="task-meta">
+                                <span class="task-stars">${renderStars(t.stars || 3)}</span>
+                                ${t.tags && t.tags.length ? t.tags.map(tag => `<span class="task-tag" onclick="todoApp.filterByTag('${escapeHtml(tag)}')">${escapeHtml(tag)}</span>`).join('') : ''}
+                                ${timeStr}
+                            </div>
+                        </div>
+                        <span class="task-type-badge">${typeLabel}</span>
+                        <div class="task-actions">
+                            <button onclick="todoApp.openEdit('${t.id}')" title="编辑">✏️</button>
+                            <button onclick="todoApp.deleteTask('${t.id}')" title="删除">🗑</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const title = input.value.trim();
+            if (!title) return;
+            tasks.push({
+                id: generateId(),
+                title,
+                type: newTaskState.type,
+                stars: newTaskState.stars,
+                tags: [...newTaskState.tags],
+                color: newTaskState.color,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            input.value = '';
+            document.getElementById('charCount').textContent = '0';
+            newTaskState.tags = [];
+            renderTagList();
+            saveTasks();
+            renderTasks();
+            if (typeof window.ccShowTip === 'function') window.ccShowTip('任务已添加', 'success');
+        }
+
+        function toggleTask(id) {
+            const t = tasks.find(x => x.id === id);
+            if (!t) return;
+            if (t.completed) {
+                t.completed = false;
+                saveTasks();
+                renderTasks();
+                return;
+            }
+            t.completed = true;
+            t.completedAt = new Date().toISOString();
+            undoTask = t;
+            if (undoTimer) clearTimeout(undoTimer);
+            document.getElementById('undoBar').style.display = 'flex';
+            undoTimer = setTimeout(() => {
+                undoTask = null;
+                document.getElementById('undoBar').style.display = 'none';
+                saveTasks();
+            }, 2000);
+            renderTasks();
+        }
+
+        function undoComplete() {
+            if (undoTask) {
+                undoTask.completed = false;
+                undoTask = null;
+                if (undoTimer) clearTimeout(undoTimer);
+                document.getElementById('undoBar').style.display = 'none';
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        let editTags = [];
+        let editColor = '#c49a6c';
+
+        function openEdit(id) {
+            const t = tasks.find(x => x.id === id);
+            if (!t) return;
+            editingId = id;
+            editStars = t.stars || 3;
+            editTags = [...(t.tags || [])];
+            editColor = t.color || '#c49a6c';
+            document.getElementById('editTitle').value = t.title;
+            document.getElementById('editType').value = t.type;
+            updateEditStars();
+            renderEditTags();
+            renderEditColors();
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function updateEditStars() {
+            document.querySelectorAll('#editStarRating .star').forEach(s => {
+                const sVal = parseInt(s.dataset.editStar);
+                s.classList.toggle('active', sVal <= editStars);
+            });
+        }
+
+        function renderEditTags() {
+            document.getElementById('editTagList').innerHTML = editTags.map((tag, i) => `
+                <span class="tag-item">${escapeHtml(tag)} <span class="remove-tag" onclick="todoApp.removeEditTag(${i})">×</span></span>
+            `).join('');
+        }
+
+        function renderEditColors() {
+            document.getElementById('editColorOptions').innerHTML = COLORS.map(c => `
+                <div class="color-dot ${editColor === c ? 'active' : ''}" style="background:${c}" data-edit-color="${c}"></div>
+            `).join('');
+            document.querySelectorAll('#editColorOptions .color-dot').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    document.querySelectorAll('#editColorOptions .color-dot').forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                    editColor = dot.dataset.editColor;
+                });
+            });
+        }
+
+        function addEditTag() {
+            const input = document.getElementById('editTagInput');
+            const v = input.value.trim();
+            if (v && !editTags.includes(v)) { editTags.push(v); renderEditTags(); }
+            input.value = '';
+        }
+
+        function removeEditTag(i) {
+            editTags.splice(i, 1);
+            renderEditTags();
+        }
+
+        function saveEdit() {
+            const t = tasks.find(x => x.id === editingId);
+            if (t) {
+                t.title = document.getElementById('editTitle').value.trim();
+                t.type = document.getElementById('editType').value;
+                t.stars = editStars;
+                t.tags = [...editTags];
+                t.color = editColor;
+                saveTasks();
+                renderTasks();
+            }
+            closeEdit();
+        }
+
+        function closeEdit() {
+            document.getElementById('modalOverlay').style.display = 'none';
+            editingId = null;
+            editTags = [];
+        }
+
+        function clearCompleted() {
+            if (!confirm('确定清空所有已完成的任务吗？')) return;
+            tasks = tasks.filter(t => !t.completed);
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTagList() {
+            document.getElementById('tagList').innerHTML = newTaskState.tags.map((tag, i) => `
+                <span class="tag-item">${escapeHtml(tag)} <span class="remove-tag" onclick="todoApp.removeTag(${i})">×</span></span>
+            `).join('');
+        }
+
+        function removeTag(i) {
+            newTaskState.tags.splice(i, 1);
+            renderTagList();
+        }
+
+        function init() {
+            loadTasks();
+
+            // 颜色选项
+            document.getElementById('colorOptions').innerHTML = COLORS.map(c => `
+                <div class="color-dot ${newTaskState.color === c ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>
+            `).join('');
+
+            // 事件绑定
+            document.getElementById('taskInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask(); }
+            });
+            document.getElementById('taskInput').addEventListener('input', e => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
+            document.getElementById('addBtn').addEventListener('click', addTask);
+
+            document.querySelectorAll('.type-btn[data-type]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.type-btn[data-type]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    newTaskState.type = btn.dataset.type;
+                });
+            });
+
+            // 星级
+            document.querySelectorAll('#starRating .star').forEach(star => {
+                star.addEventListener('click', () => {
+                    const val = parseInt(star.dataset.star);
+                    newTaskState.stars = val;
+                    document.querySelectorAll('#starRating .star').forEach(s => {
+                        const sVal = parseInt(s.dataset.star);
+                        s.classList.toggle('active', sVal <= val);
+                    });
+                });
+            });
+
+            // 编辑星级
+            document.querySelectorAll('#editStarRating .star').forEach(star => {
+                star.addEventListener('click', () => {
+                    editStars = parseInt(star.dataset.editStar);
+                    document.querySelectorAll('#editStarRating .star').forEach(s => {
+                        const sVal = parseInt(s.dataset.editStar);
+                        s.classList.toggle('active', sVal <= editStars);
+                    });
+                });
+            });
+
+            document.getElementById('addTagBtn').addEventListener('click', () => {
+                const input = document.getElementById('tagInput');
+                const v = input.value.trim();
+                if (v && !newTaskState.tags.includes(v)) { newTaskState.tags.push(v); renderTagList(); }
+                input.value = '';
+            });
+            document.getElementById('tagInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    const v = e.target.value.trim();
+                    if (v && !newTaskState.tags.includes(v)) { newTaskState.tags.push(v); renderTagList(); }
+                    e.target.value = '';
+                }
+            });
+
+            document.querySelectorAll('.color-dot[data-color]').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                    newTaskState.color = dot.dataset.color;
+                });
+            });
+
+            document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentView = tab.dataset.view;
+                    renderTasks();
+                });
+            });
+
+            document.getElementById('filterDropdown').addEventListener('change', e => {
+                filterType = e.target.value;
+                renderTasks();
+            });
+
+            document.getElementById('completedToggle').addEventListener('click', () => {
+                showCompleted = !showCompleted;
+                document.getElementById('completedToggle').classList.toggle('open', showCompleted);
+                document.getElementById('completedList').style.display = showCompleted ? '' : 'none';
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', undoComplete);
+            document.getElementById('editCancel').addEventListener('click', closeEdit);
+            document.getElementById('editSave').addEventListener('click', saveEdit);
+            document.getElementById('editAddTagBtn').addEventListener('click', addEditTag);
+            document.getElementById('editTagInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); addEditTag(); }
+            });
+            document.getElementById('modalOverlay').addEventListener('click', e => {
+                if (e.target === document.getElementById('modalOverlay')) closeEdit();
+            });
+
+            // 问候语
+            const hour = new Date().getHours();
+            let greet = '今天也要加油呀！';
+            if (hour < 6) greet = '夜深了，注意休息～';
+            else if (hour < 9) greet = '早上好，开启高效的一天！';
+            else if (hour < 12) greet = '上午好，保持专注！';
+            else if (hour < 14) greet = '中午好，适当休息～';
+            else if (hour < 18) greet = '下午好，继续冲刺！';
+            else greet = '晚上好，复盘今天吧～';
+            document.getElementById('greeting').textContent = greet;
+
+            renderTasks();
+        }
+
+        // 拖拽排序
+        let dragSrcEl = null;
+        function initDrag() {
+            document.querySelectorAll('.task-item[draggable="true"]').forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.style.opacity = '0.4';
+        }
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            if (dragSrcEl !== this) {
+                const srcId = dragSrcEl.dataset.id;
+                const dstId = this.dataset.id;
+                const srcIdx = tasks.findIndex(t => t.id === srcId);
+                const dstIdx = tasks.findIndex(t => t.id === dstId);
+                if (srcIdx > -1 && dstIdx > -1) {
+                    const [moved] = tasks.splice(srcIdx, 1);
+                    tasks.splice(dstIdx, 0, moved);
+                    saveTasks();
+                    renderTasks();
+                }
+            }
+            return false;
+        }
+        function handleDragEnd() {
+            this.style.opacity = '1';
+            document.querySelectorAll('.task-item').forEach(item => item.classList.remove('over'));
+        }
+
+        function filterByTag(tag) {
+            filterType = 'tag:' + tag;
+            document.getElementById('filterDropdown').value = 'all';
+            renderTasks();
+        }
+
+        window.todoApp = {
+            toggleTask, deleteTask, openEdit, clearCompleted, removeTag, filterByTag, removeEditTag
+        };
+
+        init();
+    })();
+    </script>
+    <script src="cc-common.js?v=3.4.1"></script>
+</body>
+</html>

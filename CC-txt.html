@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-txt" class="sc-style-1">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超超文本箱 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=3.3.2">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-left">
+                <h1>📝 超超文本箱</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="openImportModal()">📥 导入</button>
+                <button class="btn" onclick="exportData()">📤 导出</button>
+                <button class="btn btn-primary" onclick="openEditorModal()">➕ 新建文本</button>
+            </div>
+        </div>
+
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-icon">📄</span>
+                <div>
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">总文本数</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">⭐</span>
+                <div>
+                    <div class="stat-value" id="favCount">0</div>
+                    <div class="stat-label">收藏数</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">📁</span>
+                <div>
+                    <div class="stat-value" id="folderCount">0</div>
+                    <div class="stat-label">分类数</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">🏷️</span>
+                <div>
+                    <div class="stat-value" id="tagCount">0</div>
+                    <div class="stat-label">标签数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主布局 -->
+        <div class="main-layout">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 全部文本 -->
+                <div class="sidebar-section">
+                    <div class="sidebar-item active" data-filter="all" onclick="setFilter('all')">
+                        <div class="sidebar-item-left">
+                            <span>📋</span>
+                            <span>全部文本</span>
+                        </div>
+                        <span class="sidebar-item-count" id="allCount">0</span>
+                    </div>
+                    <div class="sidebar-item" data-filter="favorites" onclick="setFilter('favorites')">
+                        <div class="sidebar-item-left">
+                            <span>⭐</span>
+                            <span>收藏</span>
+                        </div>
+                        <span class="sidebar-item-count" id="favCountSidebar">0</span>
+                    </div>
+                </div>
+
+                <!-- 分类管理 -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📁 分类</div>
+                    <input type="text" class="sidebar-input" id="folderInput" placeholder="新建分类..." onkeypress="handleFolderKeypress(event)">
+                    <div id="folderList"></div>
+                </div>
+
+                <!-- 标签管理 -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">🏷️ 标签</div>
+                    <div class="tags-container" id="tagList"></div>
+                </div>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="content-area">
+                <!-- 搜索栏 -->
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="searchInput" placeholder="搜索标题或内容..." oninput="handleSearch()">
+                    </div>
+                    <select class="sort-select" id="sortSelect" onchange="handleSort()">
+                        <option value="updated">最近修改</option>
+                        <option value="created">创建时间</option>
+                        <option value="title">标题</option>
+                    </select>
+                </div>
+
+                <!-- 文本列表 -->
+                <div class="text-list" id="textList"></div>
+
+                <!-- 空状态 -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon">📭</div>
+                    <div class="empty-state-text">还没有文本</div>
+                    <div class="empty-state-hint">点击"新建文本"开始创建吧</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建/编辑文本模态框 -->
+    <div class="modal-overlay editor-modal" id="editorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="editorTitle">新建文本</h2>
+                <button class="modal-close" onclick="closeEditorModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">标题</label>
+                    <input type="text" class="form-input" id="textTitle" placeholder="输入标题...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">分类</label>
+                    <select class="form-select" id="textFolder">
+                        <option value="">无分类</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">标签（按回车添加）</label>
+                    <div class="form-tags-input" id="tagsInputContainer">
+                        <input type="text" id="tagsInput" placeholder="输入标签后按回车..." onkeypress="handleTagKeypress(event)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">内容</label>
+                    <div class="editor-toolbar">
+                        <button class="editor-toolbar-btn" onclick="insertText('**', '**')">粗体</button>
+                        <button class="editor-toolbar-btn" onclick="insertText('*', '*')">斜体</button>
+                        <button class="editor-toolbar-btn" onclick="insertText('\n- ', '')">列表</button>
+                        <button class="editor-toolbar-btn" onclick="insertText('\n## ', '')">标题</button>
+                        <button class="editor-toolbar-btn" onclick="insertText('\n> ', '')">引用</button>
+                        <button class="editor-toolbar-btn" onclick="insertText('\n```\n', '\n```')">代码块</button>
+                    </div>
+                    <div class="editor-content" id="textContent" contenteditable="true" oninput="handleContentChange()"></div>
+                    <div class="word-count" id="wordCount">0 字</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="textPrivate"> 设为私密（需要密码）
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="copyText()">📋 复制</button>
+                <button class="btn" onclick="closeEditorModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveText()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密码输入模态框 -->
+    <div class="modal-overlay confirm-modal" id="passwordModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">🔒 输入密码</h2>
+                <button class="modal-close" onclick="closePasswordModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="password" class="form-input" id="passwordInput" placeholder="请输入密码...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closePasswordModal()">取消</button>
+                <button class="btn btn-primary" onclick="verifyPassword()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入模态框 -->
+    <div class="modal-overlay confirm-modal" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">📥 导入数据</h2>
+                <button class="modal-close" onclick="closeImportModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">选择JSON文件</label>
+                    <input type="file" id="importFile" accept=".json" class="form-input" style="padding: 10px;">
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 12px;">
+                    ⚠️ 导入将合并到现有数据中
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-primary" onclick="importData()">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal-overlay confirm-modal" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">🗑️ 确认删除</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon">⚠️</div>
+                <div class="confirm-text">确定要删除这个文本吗？</div>
+                <div class="confirm-hint">此操作无法撤销</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeDeleteModal()">取消</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空确认模态框 -->
+    <div class="modal-overlay confirm-modal" id="clearModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">🗑️ 清空数据</h2>
+                <button class="modal-close" onclick="closeClearModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon">⚠️</div>
+                <div class="confirm-text">确定要清空所有数据吗？</div>
+                <div class="confirm-hint">此操作无法撤销，将删除所有文本、分类和标签</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeClearModal()">取消</button>
+                <button class="btn btn-danger" onclick="confirmClear()">清空</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==================== 数据管理 ====================
+        const STORAGE_KEY = 'chaochaotext_data';
+        const PASSWORD_KEY = 'chaochaotext_password';
+        const ENCRYPTION_PREFIX = 'ccbox:v1:';
+        const CONTENT_MAGIC = 'CC_TEXT_BOX::';
+        let texts = [];
+        let folders = [];
+        let tags = [];
+        let currentFilter = 'all';
+        let currentFolder = '';
+        let currentTag = '';
+        let searchKeyword = '';
+        let sortBy = 'updated';
+        let editingId = null;
+        let deleteId = null;
+        let currentPassword = '';
+        let passwordVerifyCallback = null;
+
+        // 初始化
+        function init() {
+            loadData();
+            renderAll();
+        }
+
+        // 加载数据
+        function loadData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const parsed = JSON.parse(data);
+                texts = parsed.texts || [];
+                folders = parsed.folders || [];
+                tags = parsed.tags || [];
+            }
+        }
+
+        // 保存数据
+        function saveData() {
+            const data = { texts, folders, tags };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // ==================== 渲染 ====================
+        function renderAll() {
+            renderStats();
+            renderFolders();
+            renderTags();
+            renderTextList();
+        }
+
+        function renderStats() {
+            document.getElementById('totalCount').textContent = texts.length;
+            document.getElementById('favCount').textContent = texts.filter(t => t.favorite).length;
+            document.getElementById('folderCount').textContent = folders.length;
+            document.getElementById('allCount').textContent = texts.length;
+            document.getElementById('favCountSidebar').textContent = texts.filter(t => t.favorite).length;
+
+            // 统计唯一标签
+            const uniqueTags = new Set();
+            texts.forEach(t => t.tags && t.tags.forEach(tag => uniqueTags.add(tag)));
+            document.getElementById('tagCount').textContent = uniqueTags.size;
+        }
+
+        function renderFolders() {
+            const folderList = document.getElementById('folderList');
+            const textFolder = document.getElementById('textFolder');
+
+            // 渲染侧边栏分类
+            let html = '';
+            folders.forEach(folder => {
+                const count = texts.filter(t => t.folder === folder).length;
+                html += `
+                    <div class="sidebar-item ${currentFolder === folder ? 'active' : ''}"
+                         data-filter="folder" data-value="${folder}" onclick="setFolderFilter('${folder}')">
+                        <div class="sidebar-item-left">
+                            <span>📁</span>
+                            <span>${escapeHtml(folder)}</span>
+                        </div>
+                        <span class="sidebar-item-count">${count}</span>
+                    </div>
+                `;
+            });
+            folderList.innerHTML = html;
+
+            // 渲染编辑器中的分类选择
+            let options = '<option value="">无分类</option>';
+            folders.forEach(folder => {
+                options += `<option value="${escapeHtml(folder)}">${escapeHtml(folder)}</option>`;
+            });
+            textFolder.innerHTML = options;
+        }
+
+        function renderTags() {
+            const tagList = document.getElementById('tagList');
+            const uniqueTags = new Set();
+            texts.forEach(t => t.tags && t.tags.forEach(tag => uniqueTags.add(tag)));
+
+            let html = '';
+            uniqueTags.forEach(tag => {
+                const count = texts.filter(t => t.tags && t.tags.includes(tag)).length;
+                html += `
+                    <span class="tag ${currentTag === tag ? 'active' : ''}"
+                          onclick="setTagFilter('${tag}')">
+                        ${escapeHtml(tag)}
+                        <span class="tag-remove" onclick="event.stopPropagation(); removeTagFromAll('${tag}')">✕</span>
+                    </span>
+                `;
+            });
+            tagList.innerHTML = html;
+        }
+
+        function renderTextList() {
+            const textList = document.getElementById('textList');
+            const emptyState = document.getElementById('emptyState');
+
+            let filtered = [...texts];
+
+            // 筛选
+            if (currentFilter === 'favorites') {
+                filtered = filtered.filter(t => t.favorite);
+            }
+            if (currentFolder) {
+                filtered = filtered.filter(t => t.folder === currentFolder);
+            }
+            if (currentTag) {
+                filtered = filtered.filter(t => t.tags && t.tags.includes(currentTag));
+            }
+            if (searchKeyword) {
+                const keyword = searchKeyword.toLowerCase();
+                filtered = filtered.filter(t =>
+                    t.title.toLowerCase().includes(keyword) ||
+                    (!t.private && (t.content || '').toLowerCase().includes(keyword))
+                );
+            }
+
+            // 排序
+            filtered.sort((a, b) => {
+                if (sortBy === 'title') return a.title.localeCompare(b.title);
+                if (sortBy === 'created') return b.created - a.created;
+                return b.updated - a.updated;
+            });
+
+            // 收藏置顶
+            filtered.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+
+            if (filtered.length === 0) {
+                textList.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            textList.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            let html = '';
+            filtered.forEach(text => {
+                const date = new Date(text.updated);
+                const dateStr = formatDate(date);
+                const preview = text.private
+                    ? '私密文本，点击后输入密码查看'
+                    : (text.content || '').substring(0, 150).replace(/\n/g, ' ');
+
+                let tagsHtml = '';
+                if (text.tags && text.tags.length > 0) {
+                    text.tags.slice(0, 3).forEach(tag => {
+                        tagsHtml += `<span class="text-card-tag">${escapeHtml(tag)}</span>`;
+                    });
+                    if (text.tags.length > 3) {
+                        tagsHtml += `<span class="text-card-tag">+${text.tags.length - 3}</span>`;
+                    }
+                }
+
+                html += `
+                    <div class="text-card" onclick="openText('${text.id}')">
+                        <div class="text-card-header">
+                            <div class="text-card-title">${escapeHtml(text.title) || '无标题'}</div>
+                            <div class="text-card-actions">
+                                <button class="icon-btn star ${text.favorite ? 'active' : ''}"
+                                        onclick="event.stopPropagation(); toggleFavorite('${text.id}')"
+                                        title="${text.favorite ? '取消收藏' : '收藏'}">
+                                    ${text.favorite ? '⭐' : '☆'}
+                                </button>
+                                <button class="icon-btn" onclick="event.stopPropagation(); copyTextContent('${text.id}')" title="复制">
+                                    📋
+                                </button>
+                                <button class="icon-btn" onclick="event.stopPropagation(); openDeleteModal('${text.id}')" title="删除">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-card-preview">${escapeHtml(preview) || '无内容'}</div>
+                        <div class="text-card-meta">
+                            <div class="text-card-tags">${tagsHtml}</div>
+                            <div>
+                                ${text.folder ? `<span class="text-card-folder">📁 ${escapeHtml(text.folder)}</span>` : ''}
+                                <span style="margin-left: 8px;">${dateStr}</span>
+                            </div>
+                        </div>
+                        ${text.private ? '<div class="lock-overlay"><span class="lock-icon">🔒</span></div>' : ''}
+                    </div>
+                `;
+            });
+            textList.innerHTML = html;
+        }
+
+        // ==================== 筛选与搜索 ====================
+        function setFilter(filter) {
+            currentFilter = filter;
+            currentFolder = '';
+            currentTag = '';
+            updateSidebarActive();
+            renderTextList();
+        }
+
+        function setFolderFilter(folder) {
+            currentFilter = 'folder';
+            currentFolder = folder;
+            currentTag = '';
+            updateSidebarActive();
+            renderTextList();
+        }
+
+        function setTagFilter(tag) {
+            currentFilter = 'tag';
+            currentFolder = '';
+            currentTag = tag;
+            updateSidebarActive();
+            renderTextList();
+        }
+
+        function updateSidebarActive() {
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+                if (currentFilter === 'all' && item.dataset.filter === 'all') {
+                    item.classList.add('active');
+                } else if (currentFilter === 'favorites' && item.dataset.filter === 'favorites') {
+                    item.classList.add('active');
+                } else if (currentFilter === 'folder' && item.dataset.filter === 'folder' && item.dataset.value === currentFolder) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 更新标签高亮
+            document.querySelectorAll('.tag').forEach(tag => {
+                tag.classList.toggle('active', tag.textContent.replace('✕', '').trim() === currentTag);
+            });
+        }
+
+        function handleSearch() {
+            searchKeyword = document.getElementById('searchInput').value;
+            renderTextList();
+        }
+
+        function handleSort() {
+            sortBy = document.getElementById('sortSelect').value;
+            renderTextList();
+        }
+
+        // ==================== 分类管理 ====================
+        function handleFolderKeypress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const folderName = input.value.trim();
+                if (folderName && !folders.includes(folderName)) {
+                    folders.push(folderName);
+                    saveData();
+                    renderAll();
+                    showToast('分类已创建', 'success');
+                }
+                input.value = '';
+            }
+        }
+
+        // ==================== 标签管理 ====================
+        let tempTags = [];
+
+        function handleTagKeypress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const tagName = input.value.trim();
+                if (tagName && !tempTags.includes(tagName)) {
+                    tempTags.push(tagName);
+                    renderTempTags();
+                }
+                input.value = '';
+            }
+        }
+
+        function renderTempTags() {
+            const container = document.getElementById('tagsInputContainer');
+            const input = document.getElementById('tagsInput');
+            // 先清空容器（保留input）
+            container.innerHTML = '';
+            tempTags.forEach((tag, index) => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'form-tag';
+                tagSpan.innerHTML = `${escapeHtml(tag)}<span class="form-tag-remove" onclick="removeTempTag(${index})">✕</span>`;
+                container.appendChild(tagSpan);
+            });
+            container.appendChild(input);
+        }
+
+        function removeTempTag(index) {
+            tempTags.splice(index, 1);
+            renderTempTags();
+        }
+
+        function removeTagFromAll(tag) {
+            texts.forEach(text => {
+                if (text.tags) {
+                    text.tags = text.tags.filter(t => t !== tag);
+                }
+            });
+            saveData();
+            renderAll();
+            showToast('标签已从所有文本中移除', 'success');
+        }
+
+        // ==================== 文本操作 ====================
+        function openText(id) {
+            const text = texts.find(t => t.id === id);
+            if (!text) return;
+
+            if (text.private) {
+                currentPassword = '';
+                passwordVerifyCallback = (password) => editText(id, password);
+                openPasswordModal();
+                showInlineTip('这是私密文本，请输入文本箱密码后查看。', 'info');
+                return;
+            }
+
+            editText(id);
+        }
+
+        function editText(id, password = '') {
+            const text = texts.find(t => t.id === id);
+            if (!text) return;
+            const content = getTextContent(text, password);
+            if (content === null) return;
+
+            editingId = id;
+            document.getElementById('editorTitle').textContent = '编辑文本';
+            document.getElementById('textTitle').value = text.title;
+            document.getElementById('textFolder').value = text.folder || '';
+            document.getElementById('textContent').innerHTML = escapeHtml(content).replace(/\n/g, '<br>');
+            document.getElementById('textPrivate').checked = text.private || false;
+            document.getElementById('wordCount').textContent = `${content.length} 字`;
+
+            tempTags = [...(text.tags || [])];
+            const container = document.getElementById('tagsInputContainer');
+            const input = document.getElementById('tagsInput');
+            container.innerHTML = '';
+            tempTags.forEach((tag, idx) => {
+                container.innerHTML += `
+                    <span class="form-tag">
+                        ${escapeHtml(tag)}
+                        <span class="form-tag-remove" onclick="removeTempTag(${idx})">✕</span>
+                    </span>
+                `;
+            });
+            container.appendChild(input);
+
+            document.getElementById('editorModal').classList.add('active');
+        }
+
+        function openEditorModal() {
+            editingId = null;
+            document.getElementById('editorTitle').textContent = '新建文本';
+            document.getElementById('textTitle').value = '';
+            document.getElementById('textFolder').value = currentFolder || '';
+            document.getElementById('textContent').innerHTML = '';
+            document.getElementById('textPrivate').checked = false;
+            document.getElementById('wordCount').textContent = '0 字';
+
+            tempTags = [];
+            const container = document.getElementById('tagsInputContainer');
+            const input = document.getElementById('tagsInput');
+            container.innerHTML = '';
+            container.appendChild(input);
+
+            document.getElementById('editorModal').classList.add('active');
+        }
+
+        function closeEditorModal() {
+            document.getElementById('editorModal').classList.remove('active');
+            editingId = null;
+        }
+
+        function saveText() {
+            const title = document.getElementById('textTitle').value.trim();
+            const folder = document.getElementById('textFolder').value;
+            const content = document.getElementById('textContent').innerText;
+            const isPrivate = document.getElementById('textPrivate').checked;
+
+            if (!title && !content) {
+                showToast('请输入标题或内容', 'warning');
+                return;
+            }
+
+            const now = Date.now();
+            let storedContent = content;
+            let encrypted = false;
+
+            if (isPrivate) {
+                const password = ensurePrivatePassword();
+                if (!password) return;
+                storedContent = encryptContent(content, password);
+                encrypted = true;
+            }
+
+            if (editingId) {
+                // 编辑现有文本
+                const index = texts.findIndex(t => t.id === editingId);
+                if (index !== -1) {
+                    texts[index] = {
+                        ...texts[index],
+                        title: title || '无标题',
+                        folder,
+                        content: storedContent,
+                        encrypted,
+                        tags: [...tempTags],
+                        private: isPrivate,
+                        updated: now
+                    };
+                }
+                showToast('文本已更新', 'success');
+            } else {
+                // 新建文本
+                const newText = {
+                    id: generateId(),
+                    title: title || '无标题',
+                    folder,
+                    content: storedContent,
+                    encrypted,
+                    tags: [...tempTags],
+                    favorite: false,
+                    private: isPrivate,
+                    created: now,
+                    updated: now
+                };
+                texts.unshift(newText);
+                showToast('文本已创建', 'success');
+            }
+
+            saveData();
+            renderAll();
+            closeEditorModal();
+        }
+
+        function toggleFavorite(id) {
+            const text = texts.find(t => t.id === id);
+            if (text) {
+                text.favorite = !text.favorite;
+                saveData();
+                renderAll();
+            }
+        }
+
+        function copyTextContent(id) {
+            const text = texts.find(t => t.id === id);
+            if (text) {
+                const copyNow = (content) => navigator.clipboard.writeText(content).then(() => {
+                    showToast('已复制到剪贴板', 'success');
+                });
+
+                if (text.private) {
+                    passwordVerifyCallback = (password) => {
+                        const content = getTextContent(text, password);
+                        if (content !== null) copyNow(content);
+                    };
+                    openPasswordModal();
+                    showInlineTip('复制私密文本前需要先输入密码。', 'info');
+                    return;
+                }
+
+                copyNow(getTextContent(text) || '');
+            }
+        }
+
+        function copyText() {
+            const content = document.getElementById('textContent').innerText;
+            if (content) {
+                navigator.clipboard.writeText(content).then(() => {
+                    showToast('已复制到剪贴板', 'success');
+                });
+            }
+        }
+
+        function insertText(before, after) {
+            const editor = document.getElementById('textContent');
+            const selection = window.getSelection();
+            const selectedText = selection.toString();
+
+            if (selectedText) {
+                document.execCommand('insertText', false, before + selectedText + after);
+            } else {
+                document.execCommand('insertText', false, before + after);
+            }
+            handleContentChange();
+        }
+
+        function handleContentChange() {
+            const content = document.getElementById('textContent').innerText;
+            document.getElementById('wordCount').textContent = `${content.length} 字`;
+        }
+
+        // ==================== 删除 ====================
+        function openDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            deleteId = null;
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
+                texts = texts.filter(t => t.id !== deleteId);
+                saveData();
+                renderAll();
+                showToast('文本已删除', 'success');
+            }
+            closeDeleteModal();
+        }
+
+        function openClearModal() {
+            document.getElementById('clearModal').classList.add('active');
+        }
+
+        function closeClearModal() {
+            document.getElementById('clearModal').classList.remove('active');
+        }
+
+        function confirmClear() {
+            texts = [];
+            folders = [];
+            tags = [];
+            saveData();
+            renderAll();
+            closeClearModal();
+            showToast('数据已清空', 'success');
+        }
+
+        // ==================== 导入导出 ====================
+        function openImportModal() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('active');
+            document.getElementById('importFile').value = '';
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                showToast('请选择文件', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.texts) {
+                        texts = [...texts, ...data.texts];
+                    }
+                    if (data.folders) {
+                        data.folders.forEach(f => {
+                            if (!folders.includes(f)) folders.push(f);
+                        });
+                    }
+                    saveData();
+                    renderAll();
+                    showToast('导入成功', 'success');
+                } catch (err) {
+                    showToast('导入失败：文件格式错误', 'error');
+                }
+                closeImportModal();
+            };
+            reader.readAsText(file);
+        }
+
+        function exportData() {
+            const data = { texts, folders, tags, exportedAt: Date.now() };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chaochaotext_backup_${formatDateForFile(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('导出成功', 'success');
+        }
+
+        // ==================== 密码 ====================
+        function openPasswordModal() {
+            document.getElementById('passwordModal').classList.add('active');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('active');
+            passwordVerifyCallback = null;
+        }
+
+        function verifyPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const savedPassword = localStorage.getItem(PASSWORD_KEY);
+            const callback = passwordVerifyCallback;
+
+            if (!input) {
+                showToast('请输入密码', 'warning');
+                return;
+            }
+
+            if (!savedPassword) {
+                localStorage.setItem(PASSWORD_KEY, input);
+                currentPassword = input;
+                closePasswordModal();
+                if (callback) {
+                    callback(input);
+                }
+                showToast('私密密码已设置', 'success');
+                showInlineTip('请记住这个密码。之后打开私密文本、复制私密内容都需要它。', 'info');
+                return;
+            }
+
+            if (input === savedPassword) {
+                currentPassword = input;
+                closePasswordModal();
+                if (callback) {
+                    callback(input);
+                }
+            } else {
+                showToast('密码错误', 'error');
+            }
+        }
+
+        function ensurePrivatePassword() {
+            let password = localStorage.getItem(PASSWORD_KEY);
+            if (password) return password;
+
+            password = window.prompt('首次使用私密文本，请设置一个文本箱密码。请记住它，忘记后无法解开已加密内容。');
+            if (!password) {
+                showToast('已取消保存私密文本', 'warning');
+                return '';
+            }
+            localStorage.setItem(PASSWORD_KEY, password);
+            showToast('私密密码已设置', 'success');
+            showInlineTip('私密文本会用这个密码保存。以后打开或复制私密文本时需要输入同一个密码。', 'info');
+            return password;
+        }
+
+        function getTextContent(text, password = '') {
+            if (!text.encrypted) return text.content || '';
+
+            const key = password || currentPassword || localStorage.getItem(PASSWORD_KEY) || '';
+            if (!key) {
+                showToast('请先输入密码', 'warning');
+                return null;
+            }
+
+            try {
+                return decryptContent(text.content || '', key);
+            } catch (err) {
+                showToast('解密失败，请检查密码是否正确', 'error');
+                showInlineTip('如果这是旧版本私密文本，重新保存一次即可转换为新版私密格式。', 'warning');
+                return null;
+            }
+        }
+
+        function encryptContent(content, password) {
+            const data = new TextEncoder().encode(CONTENT_MAGIC + (content || ''));
+            const key = new TextEncoder().encode(password);
+            if (!key.length) throw new Error('Password is empty');
+            const output = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                output[i] = data[i] ^ key[i % key.length] ^ ((i * 31) & 255);
+            }
+            return ENCRYPTION_PREFIX + bytesToBase64(output);
+        }
+
+        function decryptContent(payload, password) {
+            if (!payload.startsWith(ENCRYPTION_PREFIX)) {
+                return payload;
+            }
+            const data = base64ToBytes(payload.slice(ENCRYPTION_PREFIX.length));
+            const key = new TextEncoder().encode(password);
+            if (!key.length) throw new Error('Password is empty');
+            const output = new Uint8Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                output[i] = data[i] ^ key[i % key.length] ^ ((i * 31) & 255);
+            }
+            const decoded = new TextDecoder().decode(output);
+            if (!decoded.startsWith(CONTENT_MAGIC)) {
+                throw new Error('Invalid password or payload');
+            }
+            return decoded.slice(CONTENT_MAGIC.length);
+        }
+
+        function bytesToBase64(bytes) {
+            let binary = '';
+            bytes.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary);
+        }
+
+        function base64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function showInlineTip(message, type = 'info') {
+            if (window.ccShowTip) {
+                window.ccShowTip(message, type, 5200);
+            } else {
+                showToast(message, type === 'warning' ? 'warning' : 'success');
+            }
+        }
+
+        // ==================== 工具函数 ====================
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(date) {
+            const now = new Date();
+            const diff = now - date;
+            const day = 24 * 60 * 60 * 1000;
+
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 7 * day) return Math.floor(diff / day) + '天前';
+
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function formatDateForFile(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+N 新建
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                openEditorModal();
+            }
+            // Escape 关闭模态框
+            if (e.key === 'Escape') {
+                closeEditorModal();
+                closeDeleteModal();
+                closeImportModal();
+                closePasswordModal();
+            }
+        });
+
+        // 初始化
+        init();
+    </script>
+    <script src="cc-common.js?v=3.3.2"></script>
+</body>
+</html>

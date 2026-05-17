@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+public/dist/
+src-tauri/target/
+target/
+
+# Packaged binaries and archives
+*.exe
+*.msi
+*.app
+*.dmg
+*.zip
+*.7z
+*.rar
+
+# Logs and caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.tmp/
+tmp/
+temp/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Local-only secrets or exported private data
+.env
+.env.*
+*.local
+secrets/
+exports/private/
+data/

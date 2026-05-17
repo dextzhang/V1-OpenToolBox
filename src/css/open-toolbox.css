@@ -1,0 +1,206 @@
+html[data-page="index"] body {
+  padding-top: 34px;
+}
+
+html[data-page="index"] .container {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-page="index"] h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+html[data-page="index"] .toolbox-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  -webkit-text-fill-color: currentColor;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+html[data-page="index"] .hint {
+  width: min(720px, 100%);
+  margin: 0 auto 22px;
+  line-height: 1.7;
+}
+
+html[data-page="index"] .open-control-panel {
+  width: min(920px, 100%);
+  margin: 0 auto 22px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.24);
+}
+
+html[data-page="index"] .tool-search {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.66);
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+html[data-page="index"] .tool-search input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 0 14px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.075);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-page="index"] .tool-search input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+html[data-page="index"] .tool-search input:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html[data-page="index"] .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+html[data-page="index"] .tab,
+html[data-page="index"] .ghost-button {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  padding: 0 13px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+html[data-page="index"] .tab:hover,
+html[data-page="index"] .ghost-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-page="index"] .tab.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.42), rgba(118, 75, 162, 0.42));
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+html[data-page="index"] .ghost-button {
+  margin-top: 12px;
+}
+
+html[data-page="index"] .index-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px 0 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+html[data-page="index"] .index-section-head small {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.78rem;
+}
+
+html[data-page="index"] .card {
+  overflow: hidden;
+}
+
+html[data-page="index"] .card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+html[data-page="index"] .card-category {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.68rem;
+  font-weight: 700;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-page="index"] .drag-handle {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 3;
+  width: auto;
+  height: auto;
+  border: 0;
+  padding: 0;
+  cursor: grab;
+}
+
+html[data-page="index"] .empty-state {
+  padding: 28px 0 60px;
+  color: rgba(255, 255, 255, 0.56);
+  text-align: center;
+}
+
+html[data-page="index"] .load-error {
+  width: min(680px, 100%);
+  margin: 12px auto;
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 18px;
+  padding: 18px;
+  color: #fee2e2;
+  background: rgba(127, 29, 29, 0.5);
+  backdrop-filter: blur(20px);
+}
+
+@media (max-width: 760px) {
+  html[data-page="index"] body {
+    padding: 22px 12px;
+  }
+
+  html[data-page="index"] h1 {
+    font-size: 2rem;
+  }
+
+  html[data-page="index"] .cards {
+    gap: 14px;
+  }
+
+  html[data-page="index"] .card {
+    width: min(46vw, 170px);
+    height: 170px;
+  }
+}

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page="cc-ai-prompts-viewer">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI绘图提示词库 - 超超工具箱</title>
+    <link rel="stylesheet" href="cc-styles.css?v=2.3.3">
+</head>
+<body>
+    <header class="header prompt-header">
+        <div class="header-left">
+            <h1>AI绘图提示词库</h1>
+        </div>
+        <div class="header-controls prompt-controls">
+            <select id="sourceSelect" onchange="changeSource()" aria-label="数据源">
+                <option value="civitai">CivitAI 实时</option>
+                <option value="lexica">Lexica 搜索</option>
+                <option value="curated">精选站点案例</option>
+                <option value="ext-midjourney">Midjourney 图片墙</option>
+                <option value="ext-tensor">Tensor.Art 图片墙</option>
+                <option value="ext-seaart">SeaArt 图片墙</option>
+                <option value="ext-leonardo">Leonardo 图片墙</option>
+                <option value="ext-nightcafe">NightCafe 图片墙</option>
+                <option value="ext-promptspace">PromptSpace 图片墙</option>
+                <option value="ext-promptbase">PromptBase 图片墙</option>
+                <option value="ext-promptimage">Prompt Image 图片墙</option>
+            </select>
+            <select id="sortSelect" onchange="reloadPrompts()" aria-label="排序">
+                <option value="popular">热门</option>
+                <option value="newest">最新</option>
+            </select>
+            <div class="prompt-search">
+                <span>搜索</span>
+                <input id="queryInput" type="search" placeholder="portrait, anime, sdxl..." onkeydown="handleQueryKey(event)">
+                <button type="button" onclick="reloadPrompts()">筛选</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="prompt-shell">
+        <section class="source-note glass-card" id="sourceNote"></section>
+        <section class="source-sites glass-card" id="sourceSites"></section>
+        <section class="saved-prompts glass-card" id="savedPrompts"></section>
+        <nav class="source-tabs prompt-chips" id="categoryTabs" aria-label="分类筛选"></nav>
+        <div class="masonry prompt-grid" id="masonry"></div>
+        <div class="loading" id="loading">正在加载提示词案例...</div>
+        <div class="load-more" id="loadMore" style="display:none;">
+            <button type="button" onclick="loadMorePrompts()">加载更多</button>
+        </div>
+    </main>
+
+    <div class="modal" id="modal">
+        <button class="close-modal" onclick="closeModal()" aria-label="关闭">×</button>
+        <div class="modal-content prompt-modal-content">
+            <img id="modalImg" src="" alt="">
+            <div class="modal-body">
+                <div class="modal-heading">
+                    <div class="modal-heading-meta">
+                        <span id="modalSource"></span>
+                        <span id="modalNsfw"></span>
+                    </div>
+                    <button class="modal-save-btn" type="button" onclick="saveCurrentPrompt()">一键保存</button>
+                </div>
+                <h3>正向提示词</h3>
+                <div class="prompt-box" id="modalPrompt"></div>
+                <h3 id="negativeTitle">负向提示词</h3>
+                <div class="prompt-box prompt-negative" id="modalNegative"></div>
+                <div class="btn-group">
+                    <button class="btn" type="button" onclick="copyPrompt()">复制提示词</button>
+                    <button class="btn btn-secondary" type="button" onclick="copyNegative()">复制负向</button>
+                    <button class="btn btn-secondary" type="button" onclick="visitOriginal()">打开来源</button>
+                </div>
+                <div class="tags" id="modalTags"></div>
+                <div class="modal-stats" id="modalStats"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+    <script>
+        const CATEGORY_FILTERS = [
+            { id: 'all', label: '全部', query: '' },
+            { id: 'portrait', label: '人像', query: 'portrait' },
+            { id: 'anime', label: '动漫', query: 'anime' },
+            { id: 'realistic', label: '写实', query: 'realistic photo' },
+            { id: 'landscape', label: '风景', query: 'landscape' },
+            { id: 'cinematic', label: '电影感', query: 'cinematic' },
+            { id: 'product', label: '产品', query: 'product render' },
+            { id: 'architecture', label: '建筑', query: 'architecture' }
+        ];
+
+        const CURATED_PROMPTS = [
+            {
+                source: 'PromptHero',
+                title: '电影感写真人像',
+                prompt: 'cinematic close-up portrait, soft rim light, shallow depth of field, expressive eyes, realistic skin texture, 85mm lens, muted color grading, highly detailed',
+                negative: 'low quality, blurry, distorted face, extra fingers, bad anatomy, oversaturated',
+                model: 'SDXL',
+                tags: ['portrait', 'realistic', 'cinematic'],
+                likes: 18400,
+                originalUrl: 'https://prompthero.com/stable-diffusion-prompts'
+            },
+            {
+                source: 'OpenArt',
+                title: '商业产品海报',
+                prompt: 'premium perfume bottle on reflective black glass, studio product photography, softbox highlights, elegant composition, luxury advertising, sharp focus, 8k',
+                negative: 'messy background, low resolution, text, watermark, noisy, deformed bottle',
+                model: 'SDXL',
+                tags: ['product', 'commercial', 'studio'],
+                likes: 16200,
+                originalUrl: 'https://openart.ai/prompts'
+            },
+            {
+                source: 'Krea',
+                title: '未来建筑概念',
+                prompt: 'parametric futuristic architecture, glass facade, warm interior glow, dusk city skyline, clean geometry, atmospheric perspective, ultra detailed concept art',
+                negative: 'cluttered, flat lighting, low detail, bad perspective, watermark',
+                model: 'Midjourney / SDXL',
+                tags: ['architecture', 'concept', 'city'],
+                likes: 14800,
+                originalUrl: 'https://www.krea.ai/'
+            },
+            {
+                source: 'Lexica',
+                title: '奇幻风景',
+                prompt: 'vast fantasy valley, floating islands, waterfalls, glowing ancient ruins, morning mist, epic scale, detailed matte painting, volumetric light',
+                negative: 'flat, dull, blurry, low quality, jpeg artifacts',
+                model: 'Stable Diffusion',
+                tags: ['landscape', 'fantasy', 'matte painting'],
+                likes: 13900,
+                originalUrl: 'https://lexica.art/'
+            },
+            {
+                source: 'CivitAI',
+                title: '高细节动漫角色',
+                prompt: 'anime character portrait, detailed eyes, layered hair, dramatic lighting, intricate outfit, clean lineart, vivid but balanced colors, masterpiece',
+                negative: 'bad hands, extra limbs, low quality, poorly drawn face, blurry, cropped',
+                model: 'Anime checkpoint',
+                tags: ['anime', 'character', 'illustration'],
+                likes: 12600,
+                originalUrl: 'https://civitai.com/images'
+            },
+            {
+                source: 'PromptHero',
+                title: '暗调科幻城市',
+                prompt: 'rainy cyberpunk street, neon reflections, crowded night market, cinematic composition, detailed signs, wet asphalt, volumetric fog, high contrast',
+                negative: 'overexposed, empty street, low detail, malformed buildings, washed out',
+                model: 'SD 1.5 / SDXL',
+                tags: ['cyberpunk', 'cinematic', 'city'],
+                likes: 11900,
+                originalUrl: 'https://prompthero.com/'
+            }
+        ];
+
+        const SITE_LINKS = [
+            { name: 'PromptHero', url: 'https://prompthero.com/stable-diffusion-prompts', note: '适合看热门主题和完整提示词结构' },
+            { name: 'OpenArt', url: 'https://openart.ai/prompts', note: '适合找可复用的风格化案例' },
+            { name: 'Krea', url: 'https://www.krea.ai/', note: '适合看当下视觉趋势和参考图方向' },
+            { name: 'CivitAI Images', url: 'https://civitai.com/images', note: '适合看模型社区真实参数和 NSFW 内容' },
+            { name: 'Lexica', url: 'https://lexica.art/', note: '适合快速搜索 Stable Diffusion 图片提示词' },
+            { name: 'Midjourney Explore', url: 'https://www.midjourney.com/explore', note: '适合看高质量风格趋势和构图灵感，部分内容需要登录' },
+            { name: 'Tensor.Art', url: 'https://tensor.art/images', note: '适合看 Stable Diffusion / LoRA 社区作品和生成参数' },
+            { name: 'SeaArt Explore', url: 'https://www.seaart.ai/explore', note: '适合看亚洲社区热门图、角色和风格案例' },
+            { name: 'Leonardo Community', url: 'https://app.leonardo.ai/community-feed', note: '适合看商业质感、游戏资产和产品视觉案例' },
+            { name: 'NightCafe Explore', url: 'https://creator.nightcafe.studio/explore', note: '适合看跨模型社区作品和热门标签方向' },
+            { name: 'PromptSpace', url: 'https://www.promptspace.in/', note: '适合直接找免费可复制的 Midjourney / DALL-E / FLUX 提示词' },
+            { name: 'PromptBase', url: 'https://promptbase.com/', note: '适合看商业化提示词标题、风格包装和卖点结构' },
+            { name: 'Prompt Image', url: 'https://promptimage.org/', note: '适合快速浏览免费 AI 图像提示词案例' }
+        ];
+
+        const EXTERNAL_WALL_SOURCES = {
+            'ext-midjourney': {
+                name: 'Midjourney Explore',
+                url: 'https://www.midjourney.com/explore',
+                note: 'Midjourney 图片墙模式：本页生成高质量风格入口卡片，点开后可跳转到 Midjourney Explore 继续深挖。'
+            },
+            'ext-tensor': {
+                name: 'Tensor.Art',
+                url: 'https://tensor.art/images',
+                note: 'Tensor.Art 图片墙模式：适合顺着角色、LoRA、写实和二次元方向找社区参数灵感。'
+            },
+            'ext-seaart': {
+                name: 'SeaArt Explore',
+                url: 'https://www.seaart.ai/explore',
+                note: 'SeaArt 图片墙模式：适合看亚洲社区热门风格、角色图和商业视觉案例。'
+            },
+            'ext-leonardo': {
+                name: 'Leonardo Community',
+                url: 'https://app.leonardo.ai/community-feed',
+                note: 'Leonardo 图片墙模式：适合找游戏资产、产品视觉、概念设定和商业质感。'
+            },
+            'ext-nightcafe': {
+                name: 'NightCafe Explore',
+                url: 'https://creator.nightcafe.studio/explore',
+                note: 'NightCafe 图片墙模式：适合看跨模型社区作品、热门标签和主题挑战。'
+            },
+            'ext-promptspace': {
+                name: 'PromptSpace',
+                url: 'https://www.promptspace.in/',
+                note: 'PromptSpace 图片墙模式：适合找免费可复制的 Midjourney、DALL-E、FLUX 提示词结构。'
+            },
+            'ext-promptbase': {
+                name: 'PromptBase',
+                url: 'https://promptbase.com/',
+                note: 'PromptBase 图片墙模式：适合参考商业提示词的标题、封面、卖点和分类包装。'
+            },
+            'ext-promptimage': {
+                name: 'Prompt Image',
+                url: 'https://promptimage.org/',
+                note: 'Prompt Image 图片墙模式：适合快速浏览免费图像提示词案例和主题方向。'
+            }
+        };
+
+        const WALL_PROMPT_SEEDS = [
+            { title: '电影感人像', query: 'cinematic portrait', prompt: 'cinematic portrait, expressive face, dramatic rim light, shallow depth of field, editorial color grading, ultra detailed' },
+            { title: '二次元角色', query: 'anime character', prompt: 'anime character key visual, detailed eyes, layered hair, intricate outfit, clean line art, vivid lighting, masterpiece' },
+            { title: '产品海报', query: 'product photography', prompt: 'luxury product poster, reflective glass surface, softbox highlights, premium advertising composition, sharp focus, 8k' },
+            { title: '未来建筑', query: 'futuristic architecture', prompt: 'futuristic architecture concept, glass facade, warm interior glow, dusk skyline, clean geometry, atmospheric perspective' },
+            { title: '暗调赛博城市', query: 'cyberpunk city', prompt: 'rainy cyberpunk city street, neon reflections, crowded market, wet asphalt, volumetric fog, cinematic composition' },
+            { title: '奇幻风景', query: 'fantasy landscape', prompt: 'epic fantasy landscape, floating islands, waterfalls, glowing ruins, morning mist, volumetric light, detailed matte painting' },
+            { title: '游戏资产', query: 'game asset', prompt: 'stylized game asset concept, isometric prop, clean silhouette, polished material, studio lighting, production ready' },
+            { title: '时尚大片', query: 'fashion editorial', prompt: 'high fashion editorial photography, bold styling, dramatic lighting, elegant pose, magazine cover composition, realistic texture' },
+            { title: 'Logo 标志', query: 'logo design', prompt: 'modern logo design, clean vector mark, premium brand identity, minimal geometry, high contrast, presentation mockup' },
+            { title: '纹身图案', query: 'tattoo design', prompt: 'tattoo flash design, bold linework, ornamental composition, high contrast ink, clean white background' },
+            { title: '室内空间', query: 'interior design', prompt: 'modern interior design, warm ambient lighting, natural materials, refined furniture, architectural digest style' },
+            { title: '科幻载具', query: 'sci fi vehicle', prompt: 'sci fi vehicle concept art, sleek industrial design, cinematic hangar lighting, hard surface details, production concept' }
+        ];
+
+        let currentSource = 'civitai';
+        let currentCategory = 'all';
+        let currentPrompt = '';
+        let currentNegative = '';
+        let currentLink = '';
+        let currentImageUrl = '';
+        let currentModalItem = null;
+        let currentItems = [];
+        let savedPromptRecords = [];
+        let renderedCount = 0;
+        let civitaiCursor = null;
+        let lexicaCache = [];
+        let activeRequestId = 0;
+
+        const masonry = document.getElementById('masonry');
+        const loading = document.getElementById('loading');
+        const loadMore = document.getElementById('loadMore');
+        const sourceNote = document.getElementById('sourceNote');
+        const sourceSites = document.getElementById('sourceSites');
+        const savedPrompts = document.getElementById('savedPrompts');
+        const SAVED_PROMPTS_KEY = 'cc_ai_prompt_saved_records_v1';
+        const MAX_SAVED_PROMPTS = 10;
+
+        function init() {
+            loadSavedPrompts();
+            renderCategoryTabs();
+            renderSiteLinks();
+            renderSavedPrompts();
+            updateSourceNote();
+            reloadPrompts();
+        }
+
+        function renderCategoryTabs() {
+            const tabs = document.getElementById('categoryTabs');
+            tabs.innerHTML = CATEGORY_FILTERS.map(category => `
+                <button type="button" class="source-tab ${category.id === currentCategory ? 'active' : ''}" onclick="selectCategory('${category.id}')">${category.label}</button>
+            `).join('');
+        }
+
+        function renderSiteLinks() {
+            sourceSites.innerHTML = SITE_LINKS.map(site => `
+                <a class="source-site" href="${site.url}" target="_blank" rel="noreferrer">
+                    <strong>${site.name}</strong>
+                    <span>${site.note}</span>
+                </a>
+            `).join('');
+        }
+
+        function loadSavedPrompts() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SAVED_PROMPTS_KEY) || '[]');
+                savedPromptRecords = Array.isArray(saved) ? saved.slice(0, MAX_SAVED_PROMPTS) : [];
+            } catch (error) {
+                savedPromptRecords = [];
+            }
+        }
+
+        function persistSavedPrompts() {
+            localStorage.setItem(SAVED_PROMPTS_KEY, JSON.stringify(savedPromptRecords.slice(0, MAX_SAVED_PROMPTS)));
+        }
+
+        function renderSavedPrompts() {
+            const records = savedPromptRecords.slice(0, MAX_SAVED_PROMPTS);
+            savedPrompts.innerHTML = `
+                <div class="saved-prompts-head">
+                    <div>
+                        <strong>保存记录</strong>
+                        <span>最多保留 ${MAX_SAVED_PROMPTS} 条提示词、原帖地址和时间</span>
+                    </div>
+                    ${records.length ? '<button type="button" onclick="clearSavedPrompts()">清空</button>' : ''}
+                </div>
+                <div class="saved-prompts-list">
+                    ${records.length ? records.map((record, index) => `
+                        <article class="saved-prompt-item">
+                            <div class="saved-prompt-meta">
+                                <span>${escapeHtml(record.timeLabel || formatSavedTime(record.savedAt))}</span>
+                                <span>${escapeHtml(record.source || 'Prompt')}</span>
+                            </div>
+                            <p>${escapeHtml(record.prompt || '').slice(0, 180)}</p>
+                            <span class="saved-prompt-url">${escapeHtml(record.sourceUrl || record.imageUrl || '无原帖地址')}</span>
+                            <div class="saved-prompt-actions">
+                                <button type="button" onclick="copySavedPrompt(${index})">复制文字</button>
+                                <button type="button" onclick="copySavedPostUrl(${index})">复制原帖</button>
+                                <button type="button" onclick="openSavedPost(${index})">打开原帖</button>
+                            </div>
+                        </article>
+                    `).join('') : '<p class="saved-prompts-empty">点开图片提示词后，可以一键保存到这里。</p>'}
+                </div>
+            `;
+        }
+
+        function formatSavedTime(value) {
+            const date = value ? new Date(value) : new Date();
+            if (Number.isNaN(date.getTime())) return '';
+            const pad = number => String(number).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function updateSourceNote() {
+            const notes = {
+                civitai: 'CivitAI 使用官方图片接口读取真实社区作品。这里不传 nsfw 参数，因此不会过滤 NSFW 分级；如果图片直链加载失败，会用提示词生成备用预览。',
+                lexica: 'Lexica 使用公开搜索接口按关键词拉取结果，适合快速找 Stable Diffusion 提示词和类似案例。',
+                curated: '精选站点案例不依赖站点热链图片，使用常见热门结构整理成可复制模板，并保留原站入口方便继续深挖。'
+            };
+            sourceNote.textContent = EXTERNAL_WALL_SOURCES[currentSource]?.note || notes[currentSource];
+        }
+
+        function getQuery() {
+            const input = document.getElementById('queryInput').value.trim();
+            const category = CATEGORY_FILTERS.find(item => item.id === currentCategory);
+            return input || category?.query || '';
+        }
+
+        function handleQueryKey(event) {
+            if (event.key === 'Enter') {
+                reloadPrompts();
+            }
+        }
+
+        function selectCategory(categoryId) {
+            currentCategory = categoryId;
+            renderCategoryTabs();
+            reloadPrompts();
+        }
+
+        function changeSource() {
+            currentSource = document.getElementById('sourceSelect').value;
+            updateSourceNote();
+            reloadPrompts();
+        }
+
+        async function reloadPrompts() {
+            const requestId = ++activeRequestId;
+            masonry.innerHTML = '';
+            currentItems = [];
+            renderedCount = 0;
+            civitaiCursor = null;
+            lexicaCache = [];
+            loadMore.style.display = 'none';
+            setLoading('正在加载提示词案例...');
+
+            try {
+                const items = await fetchCurrentSource();
+                if (requestId !== activeRequestId) return;
+                appendItems(items);
+            } catch (error) {
+                if (requestId !== activeRequestId) return;
+                console.error(error);
+                const fallbackItems = makeCuratedItems(0).map(item => ({
+                    ...item,
+                    source: `${currentSource === 'civitai' ? 'CivitAI' : 'Lexica'} 备用预览`
+                }));
+                if (fallbackItems.length) {
+                    appendItems(fallbackItems);
+                    setLoading('');
+                } else {
+                    setLoading(`加载失败：${error.message || '外部站点暂时不可用'}`);
+                }
+            }
+        }
+
+        async function loadMorePrompts() {
+            loadMore.style.display = 'none';
+            setLoading('正在加载更多...');
+            try {
+                if (currentSource === 'curated') {
+                    appendItems(makeCuratedItems(renderedCount));
+                } else {
+                    const items = await fetchCurrentSource(true);
+                    appendItems(items);
+                }
+            } catch (error) {
+                console.error(error);
+                setLoading(`加载更多失败：${error.message || '外部站点暂时不可用'}`);
+                loadMore.style.display = 'block';
+            }
+        }
+
+        async function fetchCurrentSource(isMore = false) {
+            if (currentSource === 'civitai') return fetchCivitAI(isMore);
+            if (currentSource === 'lexica') return fetchLexica(isMore);
+            if (EXTERNAL_WALL_SOURCES[currentSource]) return makeExternalWallItems(renderedCount);
+            return makeCuratedItems(renderedCount);
+        }
+
+        async function fetchCivitAI(isMore = false) {
+            const sortValue = document.getElementById('sortSelect').value;
+            const params = new URLSearchParams({
+                limit: '60',
+                sort: sortValue === 'popular' ? 'Most Reactions' : 'Newest',
+                period: sortValue === 'popular' ? 'Month' : 'AllTime'
+            });
+
+            if (isMore && civitaiCursor) {
+                params.set('cursor', civitaiCursor);
+            }
+
+            const data = await fetchJson(`https://civitai.com/api/v1/images?${params.toString()}`, 'CivitAI');
+            civitaiCursor = data.metadata?.nextCursor || null;
+            const query = getQuery().toLowerCase();
+
+            return (data.items || [])
+                .map(normalizeCivitaiItem)
+                .filter(item => item.prompt)
+                .filter(item => matchesQuery(item, query));
+        }
+
+        function normalizeCivitaiItem(item) {
+            const meta = item.meta || {};
+            const stats = item.stats || {};
+            const model = item.modelVersion?.model?.name || item.modelVersion?.name || meta.Model || meta.model || '';
+            const nsfw = item.nsfwLevel || item.nsfw || '';
+            const tags = [
+                model,
+                nsfw ? `NSFW: ${nsfw}` : '',
+                meta.sampler ? `Sampler: ${meta.sampler}` : '',
+                meta.steps ? `Steps: ${meta.steps}` : '',
+                meta.cfgScale ? `CFG: ${meta.cfgScale}` : ''
+            ].filter(Boolean);
+
+            return {
+                id: `civitai-${item.id}`,
+                source: 'CivitAI',
+                title: model || 'CivitAI image',
+                imageUrl: item.url,
+                previewUrl: getPollinationsPreview(meta.prompt || ''),
+                prompt: meta.prompt || '',
+                negative: meta.negativePrompt || '',
+                model,
+                seed: meta.seed || '',
+                width: item.width || meta.Size?.split('x')?.[0] || '',
+                height: item.height || meta.Size?.split('x')?.[1] || '',
+                likes: stats.heartCount || stats.likeCount || stats.commentCount || 0,
+                comments: stats.commentCount || 0,
+                nsfw,
+                tags,
+                originalUrl: item.postId ? `https://civitai.com/posts/${item.postId}` : `https://civitai.com/images/${item.id}`
+            };
+        }
+
+        async function fetchLexica(isMore = false) {
+            if (isMore && lexicaCache.length) {
+                return lexicaCache.splice(0, 18);
+            }
+
+            const query = getQuery() || 'popular stable diffusion prompt';
+            const data = await fetchJson(`https://lexica.art/api/v1/search?q=${encodeURIComponent(query)}`, 'Lexica');
+            const items = (data.images || []).map(item => ({
+                id: `lexica-${item.id}`,
+                source: 'Lexica',
+                title: item.model || 'Lexica image',
+                imageUrl: item.srcSmall || item.src,
+                previewUrl: getPollinationsPreview(item.prompt || ''),
+                prompt: item.prompt || '',
+                negative: '',
+                model: item.model || 'Stable Diffusion',
+                seed: item.seed || '',
+                width: item.width || '',
+                height: item.height || '',
+                likes: item.guidance || 0,
+                nsfw: item.nsfw ? 'true' : '',
+                tags: [item.model, item.nsfw ? 'NSFW' : '', item.guidance ? `Guidance: ${item.guidance}` : ''].filter(Boolean),
+                originalUrl: item.gallery || `https://lexica.art?q=${item.id}`
+            }));
+
+            lexicaCache = items.slice(18);
+            return items.slice(0, 18);
+        }
+
+        async function fetchJson(url, label, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (!response.ok) {
+                    throw new Error(`${label} ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error(`${label} 请求超时`);
+                }
+                throw error;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        function makeCuratedItems(offset = 0) {
+            const query = getQuery().toLowerCase();
+            let items = CURATED_PROMPTS
+                .map((item, index) => ({
+                    ...item,
+                    id: `curated-${offset}-${index}`,
+                    imageUrl: getPollinationsPreview(item.prompt, offset + index),
+                    previewUrl: getPollinationsPreview(item.prompt, offset + index),
+                    nsfw: '',
+                    tags: item.tags || []
+                }))
+                .filter(item => matchesQuery(item, query));
+
+            if (document.getElementById('sortSelect').value === 'popular') {
+                items.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+            }
+
+            return items;
+        }
+
+        function makeExternalWallItems(offset = 0) {
+            const source = EXTERNAL_WALL_SOURCES[currentSource];
+            const query = getQuery().toLowerCase();
+            const batch = WALL_PROMPT_SEEDS.map((seed, index) => {
+                const prompt = `${seed.prompt}, ${source.name} inspiration wall`;
+                return {
+                    id: `${currentSource}-${offset}-${index}`,
+                    source: source.name,
+                    title: `${source.name} · ${seed.title}`,
+                    imageUrl: getPollinationsPreview(prompt, offset + index + 120),
+                    previewUrl: getPollinationsPreview(prompt, offset + index + 120),
+                    prompt,
+                    negative: 'low quality, blurry, watermark, bad anatomy, distorted details',
+                    model: 'External inspiration',
+                    likes: Math.max(0, 9800 - offset * 120 + index * 37),
+                    tags: [seed.query, 'inspiration', source.name],
+                    originalUrl: getExternalSearchUrl(source.url, seed.query)
+                };
+            }).filter(item => matchesQuery(item, query));
+
+            return document.getElementById('sortSelect').value === 'newest' ? batch.reverse() : batch;
+        }
+
+        function getExternalSearchUrl(baseUrl, query) {
+            const encoded = encodeURIComponent(query);
+            if (baseUrl.includes('tensor.art')) return `https://tensor.art/search?keyword=${encoded}`;
+            if (baseUrl.includes('seaart.ai')) return `https://www.seaart.ai/search/${encoded}`;
+            if (baseUrl.includes('promptbase.com')) return `https://promptbase.com/marketplace?query=${encoded}`;
+            if (baseUrl.includes('promptspace.in')) return `https://www.promptspace.in/?s=${encoded}`;
+            if (baseUrl.includes('promptimage.org')) return `https://promptimage.org/?s=${encoded}`;
+            if (baseUrl.includes('nightcafe')) return `https://creator.nightcafe.studio/search/creations?q=${encoded}`;
+            return baseUrl;
+        }
+
+        function matchesQuery(item, query) {
+            if (!query) return true;
+            const text = [
+                item.prompt,
+                item.negative,
+                item.title,
+                item.model,
+                item.source,
+                ...(item.tags || [])
+            ].join(' ').toLowerCase();
+            return query.split(/\s+/).every(word => text.includes(word));
+        }
+
+        function appendItems(items) {
+            if (!items.length && !masonry.children.length) {
+                setLoading('暂时没有匹配结果，可以换一个关键词或来源。');
+                return;
+            }
+
+            setLoading('');
+            currentItems.push(...items);
+            renderCards(items);
+            renderedCount += items.length;
+
+            if (currentSource === 'civitai') {
+                loadMore.style.display = civitaiCursor ? 'block' : 'none';
+            } else if (currentSource === 'lexica') {
+                loadMore.style.display = lexicaCache.length ? 'block' : 'none';
+            } else {
+                loadMore.style.display = 'block';
+            }
+        }
+
+        function renderCards(items) {
+            const fragment = document.createDocumentFragment();
+            items.forEach((item, index) => {
+                const card = document.createElement('article');
+                card.className = 'card glass-card prompt-card';
+                card.style.animationDelay = `${Math.min(index, 12) * 0.04}s`;
+                card.onclick = () => openModal(item);
+
+                const nsfwBadge = item.nsfw ? `<span class="nsfw-badge">NSFW ${escapeHtml(String(item.nsfw))}</span>` : '';
+                const tags = (item.tags || []).slice(0, 3).map(tag => `<span>${escapeHtml(String(tag))}</span>`).join('');
+                card.innerHTML = `
+                    <img src="${escapeAttribute(item.imageUrl || item.previewUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${escapeAttribute(item.previewUrl || getPollinationsPreview(item.prompt))}'">
+                    <div class="card-overlay">
+                        <div class="card-meta">${tags}</div>
+                        <div class="card-stats">${escapeHtml(item.source || '')} ${item.likes ? ` · ${Number(item.likes).toLocaleString()} 热度` : ''}</div>
+                    </div>
+                    ${nsfwBadge}
+                    <div class="prompt-card-body">
+                        <strong>${escapeHtml(item.title || item.model || item.source || 'Prompt')}</strong>
+                        <p>${escapeHtml(item.prompt || '').slice(0, 170)}</p>
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+            masonry.appendChild(fragment);
+        }
+
+        function openModal(item) {
+            currentModalItem = item;
+            currentPrompt = item.prompt || '';
+            currentNegative = item.negative || '';
+            currentLink = item.originalUrl || item.imageUrl || '';
+            currentImageUrl = item.imageUrl || item.previewUrl || '';
+
+            const modalImg = document.getElementById('modalImg');
+            modalImg.src = currentImageUrl;
+            modalImg.onerror = () => {
+                modalImg.onerror = null;
+                modalImg.src = item.previewUrl || getPollinationsPreview(item.prompt);
+            };
+
+            document.getElementById('modalSource').textContent = `${item.source || ''}${item.model ? ` · ${item.model}` : ''}`;
+            document.getElementById('modalNsfw').textContent = item.nsfw ? `NSFW ${item.nsfw}` : '';
+            document.getElementById('modalPrompt').textContent = currentPrompt || '没有读取到提示词';
+            document.getElementById('modalNegative').textContent = currentNegative || '无';
+            document.getElementById('negativeTitle').style.display = currentNegative ? 'block' : 'none';
+            document.getElementById('modalNegative').style.display = currentNegative ? 'block' : 'none';
+            document.getElementById('modalTags').innerHTML = (item.tags || []).map(tag => `<span class="tag">${escapeHtml(String(tag))}</span>`).join('');
+
+            const details = [
+                item.likes ? `${Number(item.likes).toLocaleString()} 热度` : '',
+                item.comments ? `${Number(item.comments).toLocaleString()} 评论` : '',
+                item.seed ? `Seed: ${item.seed}` : '',
+                item.width && item.height ? `${item.width}×${item.height}` : ''
+            ].filter(Boolean);
+            document.getElementById('modalStats').textContent = details.join(' · ') || '无额外参数';
+
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function visitOriginal() {
+            if (currentLink) {
+                window.open(currentLink, '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        function saveCurrentPrompt() {
+            if (!currentPrompt) {
+                showToast('没有可保存的提示词');
+                return;
+            }
+
+            const now = new Date();
+            const record = {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                prompt: currentPrompt,
+                negative: currentNegative,
+                imageUrl: currentImageUrl,
+                sourceUrl: currentLink,
+                source: currentModalItem?.source || '',
+                title: currentModalItem?.title || currentModalItem?.model || '',
+                savedAt: now.toISOString(),
+                timeLabel: formatSavedTime(now)
+            };
+
+            savedPromptRecords = [
+                record,
+                ...savedPromptRecords.filter(item => item.prompt !== record.prompt || item.sourceUrl !== record.sourceUrl)
+            ].slice(0, MAX_SAVED_PROMPTS);
+            persistSavedPrompts();
+            renderSavedPrompts();
+            showToast(`已保存记录（${savedPromptRecords.length}/${MAX_SAVED_PROMPTS}）`);
+        }
+
+        async function copySavedPrompt(index) {
+            const record = savedPromptRecords[index];
+            if (!record) return;
+            await copyText(record.prompt || '');
+        }
+
+        async function copySavedPostUrl(index) {
+            const record = savedPromptRecords[index];
+            const url = record?.sourceUrl || record?.imageUrl || '';
+            if (!url) {
+                showToast('这条记录没有原帖地址');
+                return;
+            }
+            await copyText(url);
+        }
+
+        function openSavedPost(index) {
+            const record = savedPromptRecords[index];
+            const url = record?.sourceUrl || record?.imageUrl;
+            if (url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else {
+                showToast('这条记录没有原帖地址');
+            }
+        }
+
+        function clearSavedPrompts() {
+            savedPromptRecords = [];
+            persistSavedPrompts();
+            renderSavedPrompts();
+            showToast('已清空保存记录');
+        }
+
+        async function copyPrompt() {
+            await copyText(currentPrompt);
+        }
+
+        async function copyNegative() {
+            await copyText(currentNegative || '');
+        }
+
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (error) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            showToast('已复制到剪贴板');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (message) toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function setLoading(message) {
+            loading.textContent = message;
+            loading.style.display = message ? 'block' : 'none';
+        }
+
+        function getPollinationsPreview(prompt, seed = 42) {
+            const safePrompt = prompt || 'cinematic AI art prompt example';
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(safePrompt)}?width=768&height=1024&nologo=true&seed=${seed}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char]));
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value).replace(/`/g, '&#096;');
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeModal();
+        });
+
+        document.getElementById('modal').addEventListener('click', event => {
+            if (event.target.id === 'modal') closeModal();
+        });
+
+        init();
+    </script>
+    <script src="cc-common.js?v=2.1.8"></script>
+</body>
+</html>
