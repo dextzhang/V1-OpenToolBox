@@ -6,7 +6,7 @@
   <title>OpenToolBox</title>
   <meta name="description" content="OpenToolBox 是一个可离线使用、可扩展的本地效率工具箱。">
   <link rel="stylesheet" href="cc-styles.css?v=2.3.3">
-  <link rel="stylesheet" href="src/css/open-toolbox.css?v=1.0.3">
+  <link rel="stylesheet" href="src/css/open-toolbox.css?v=1.1.0">
 </head>
 <body class="sc-style-1">
   <div id="bg-layer"></div>
@@ -21,7 +21,10 @@
         <input id="toolSearch" type="search" placeholder="搜索工具、分类或描述" autocomplete="off">
       </label>
       <div class="tabs" id="categoryTabs"></div>
-      <button class="ghost-button" id="resetOrderButton" type="button">恢复默认排序</button>
+      <div class="control-actions">
+        <button class="ghost-button" id="resetOrderButton" type="button">恢复默认排序</button>
+        <button class="ghost-button danger" id="clearLocalDataButton" type="button">清理本地数据</button>
+      </div>
     </section>
 
     <section class="recent-panel" id="recentPanel" hidden>
@@ -40,9 +43,9 @@
     <p class="empty-state" id="emptyState" hidden>没有匹配的工具。</p>
   </div>
 
-  <script src="src/data/tools.js?v=1.0.3"></script>
-  <script src="src/js/storage.js?v=1.0.3"></script>
-  <script src="src/js/index-page.js?v=1.0.3"></script>
+  <script src="src/data/tools.js?v=1.1.0"></script>
+  <script src="src/js/storage.js?v=1.1.0"></script>
+  <script src="src/js/index-page.js?v=1.1.0"></script>
   <script src="cc-common.js?v=2.3.3"></script>
 </body>
 </html>

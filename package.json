@@ -5,7 +5,7 @@
   "type": "module",
   "description": "离线优先的本地效率工具箱。",
   "scripts": {
-    "check": "node scripts/smoke-check.mjs",
+    "check": "node scripts/smoke-check.mjs && node scripts/privacy-check.mjs",
     "start": "node scripts/dev-server.mjs"
   },
   "keywords": [

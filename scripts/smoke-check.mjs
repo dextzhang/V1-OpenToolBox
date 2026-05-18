@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
@@ -19,6 +19,12 @@ for (const tool of tools) {
   }
   if (ids.has(tool.id)) {
     errors.push(`工具 id 重复: ${tool.id}`);
+  }
+  try {
+    const page = await stat(new URL(`../${tool.page}`, import.meta.url));
+    if (!page.isFile()) errors.push(`工具页面不存在: ${tool.page}`);
+  } catch (_) {
+    errors.push(`工具页面不存在: ${tool.page}`);
   }
   ids.add(tool.id);
 }

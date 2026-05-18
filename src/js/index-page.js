@@ -1,3 +1,4 @@
+const ALL_CATEGORY = '全部';
 const ORDER_KEY = 'opentoolbox.toolOrder.v1';
 const RECENT_KEY = 'opentoolbox.recent.v1';
 const RECENT_DAYS = 7;
@@ -5,7 +6,7 @@ const tools = window.OpenToolBoxTools || [];
 const storage = window.OpenToolBoxStorage;
 
 const state = {
-  category: '全部',
+  category: ALL_CATEGORY,
   query: '',
   order: []
 };
@@ -18,7 +19,8 @@ const els = {
   empty: document.querySelector('#emptyState'),
   recentPanel: document.querySelector('#recentPanel'),
   recentList: document.querySelector('#recentList'),
-  resetOrder: document.querySelector('#resetOrderButton')
+  resetOrder: document.querySelector('#resetOrderButton'),
+  clearLocalData: document.querySelector('#clearLocalDataButton')
 };
 
 try {
@@ -54,10 +56,12 @@ function bindEvents() {
     storage.writeJson(ORDER_KEY, state.order);
     renderTools();
   });
+
+  els.clearLocalData.addEventListener('click', clearLocalData);
 }
 
 function renderTabs() {
-  const categories = ['全部', ...new Set(tools.map(tool => tool.category))];
+  const categories = [ALL_CATEGORY, ...new Set(tools.map(tool => tool.category))];
   els.tabs.innerHTML = categories.map(category => `
     <button class="tab ${category === state.category ? 'is-active' : ''}" type="button" data-category="${escapeHtml(category)}">
       ${escapeHtml(category)}
@@ -79,46 +83,50 @@ function renderTools() {
     .filter(Boolean);
 
   const filtered = orderedTools.filter(tool => {
-    const inCategory = state.category === '全部' || tool.category === state.category;
+    const inCategory = state.category === ALL_CATEGORY || tool.category === state.category;
     const haystack = `${tool.title} ${tool.description} ${tool.category}`.toLowerCase();
     return inCategory && (!state.query || haystack.includes(state.query));
   });
 
+  const canReorder = state.category === ALL_CATEGORY && !state.query;
+  els.grid.dataset.reorder = canReorder ? 'enabled' : 'disabled';
   els.count.textContent = `${filtered.length} / ${tools.length}`;
   els.empty.hidden = filtered.length > 0;
-  els.grid.innerHTML = filtered.map(renderToolCard).join('');
-  bindCardEvents();
+  els.grid.innerHTML = filtered.map(tool => renderToolCard(tool, canReorder)).join('');
+  bindCardEvents(canReorder);
 }
 
-function renderToolCard(tool) {
+function renderToolCard(tool, canReorder) {
   return `
-    <article class="card" draggable="true" data-id="${escapeHtml(tool.id)}">
+    <article class="card" draggable="${canReorder ? 'true' : 'false'}" data-id="${escapeHtml(tool.id)}">
       <a class="card-link" href="${escapeHtml(tool.page)}" data-open-tool="${escapeHtml(tool.id)}" draggable="false">
         <span class="card-icon">${escapeHtml(tool.icon)}</span>
         <span class="card-title">${escapeHtml(tool.title)}</span>
         <span class="card-desc">${escapeHtml(tool.description)}</span>
         <span class="card-category">${escapeHtml(tool.category)}</span>
       </a>
-      <button class="drag-handle" type="button" aria-label="拖动排序">⋮⋮ 拖动</button>
+      <button class="drag-handle" type="button" aria-label="拖动排序" ${canReorder ? '' : 'disabled'}>⋮⋮ 拖动</button>
     </article>
   `;
 }
 
-function bindCardEvents() {
+function bindCardEvents(canReorder) {
   let draggedId = null;
   let didDrag = false;
+  let suppressClickUntil = 0;
 
   els.grid.querySelectorAll('[data-open-tool]').forEach(link => {
     link.addEventListener('click', event => {
-      if (didDrag) {
+      if (Date.now() < suppressClickUntil) {
         event.preventDefault();
         event.stopPropagation();
-        didDrag = false;
         return;
       }
       recordUsage(link.dataset.openTool);
     });
   });
+
+  if (!canReorder) return;
 
   els.grid.querySelectorAll('.card').forEach(card => {
     card.addEventListener('dragstart', event => {
@@ -132,6 +140,10 @@ function bindCardEvents() {
     card.addEventListener('dragend', () => {
       card.classList.remove('dragging');
       draggedId = null;
+      if (didDrag) {
+        persistOrderFromDom(false);
+        suppressClickUntil = Date.now() + 450;
+      }
     });
 
     card.addEventListener('dragover', event => {
@@ -145,13 +157,20 @@ function bindCardEvents() {
       didDrag = true;
     });
 
-    card.addEventListener('drop', () => {
-      state.order = Array.from(els.grid.querySelectorAll('.card')).map(item => item.dataset.id);
-      state.order = normalizeOrder(state.order);
-      storage.writeJson(ORDER_KEY, state.order);
-      renderTools();
+    card.addEventListener('drop', event => {
+      event.preventDefault();
+      if (didDrag) {
+        persistOrderFromDom(false);
+        suppressClickUntil = Date.now() + 450;
+      }
     });
   });
+}
+
+function persistOrderFromDom(shouldRender = true) {
+  state.order = normalizeOrder(Array.from(els.grid.querySelectorAll('.card')).map(item => item.dataset.id));
+  storage.writeJson(ORDER_KEY, state.order);
+  if (shouldRender) renderTools();
 }
 
 function renderRecent() {
@@ -183,6 +202,16 @@ function recordUsage(id) {
   recent[id] = recent[id] || {};
   recent[id][day] = (recent[id][day] || 0) + 1;
   storage.writeJson(RECENT_KEY, recent);
+}
+
+function clearLocalData() {
+  const ok = confirm('将清理当前地址下的 localStorage，包括排序、最近使用、同步设置和本地工具数据。不会影响 GitHub 仓库。继续？');
+  if (!ok) return;
+  localStorage.clear();
+  if (typeof window.ccShowTip === 'function') {
+    window.ccShowTip('本地数据已清理，页面即将刷新。', 'success');
+  }
+  setTimeout(() => window.location.reload(), 250);
 }
 
 function pruneRecent(recent) {
